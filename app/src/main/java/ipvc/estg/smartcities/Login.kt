@@ -6,6 +6,9 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -36,6 +39,25 @@ class Login : AppCompatActivity() {
 
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        val inflater: MenuInflater = menuInflater
+        inflater.inflate(R.menu.menu, menu)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.notes -> {
+                val intent = Intent(this, Notes::class.java)
+                startActivity(intent)
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+
+
+    }
+
     private val textWatcher = object : TextWatcher {
         override fun afterTextChanged(s: Editable?) { }
         override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
@@ -45,7 +67,6 @@ class Login : AppCompatActivity() {
             loginButton.isEnabled = !(email.text.toString()=="" || password.text.toString()=="")
         }
     }
-
 
     fun loginButton(view: View) {
         //val intent = Intent(this, Map::class.java)
