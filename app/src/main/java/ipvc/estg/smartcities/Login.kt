@@ -69,8 +69,8 @@ class Login : AppCompatActivity() {
     }
 
     fun loginButton(view: View) {
-        //val intent = Intent(this, Map::class.java)
-        //startActivity(intent)
+        val intent = Intent(this, Map::class.java)
+        startActivity(intent)
         Toast.makeText(this, "Email: " + email.text + " Password: " + password.text, Toast.LENGTH_SHORT).show()
     }
 }
