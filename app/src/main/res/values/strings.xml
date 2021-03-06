@@ -5,4 +5,8 @@
     <string name="login">Login</string>
     <string name="smart_cities">Smart Cities</string>
     <string name="notes">notes</string>
+    <string name="title">Title</string>
+    <string name="description">Description</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
 </resources>
