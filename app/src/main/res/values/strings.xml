@@ -9,4 +9,6 @@
     <string name="description">Description</string>
     <string name="delete">Delete</string>
     <string name="edit">Edit</string>
+    <string name="add_notes">Add Notes</string>
+    <string name="field_is_empty">Field is empty</string>
 </resources>

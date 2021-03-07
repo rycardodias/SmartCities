@@ -13,10 +13,9 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
-import ipvc.estg.smartcities.api.Endpoints
-import ipvc.estg.smartcities.api.ServiceBuilder
 
-class Login : AppCompatActivity() {
+class
+Login : AppCompatActivity() {
     private lateinit var email: EditText
     private lateinit var password: EditText
     private  lateinit var loginButton: Button
@@ -69,8 +68,9 @@ class Login : AppCompatActivity() {
     }
 
     fun loginButton(view: View) {
-        val intent = Intent(this, Map::class.java)
-        startActivity(intent)
-        Toast.makeText(this, "Email: " + email.text + " Password: " + password.text, Toast.LENGTH_SHORT).show()
+//        val intent = Intent(this, Map::class.java)
+//        startActivity(intent)
+//        Toast.makeText(this, "Email: " + email.text + " Password: " + password.text, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Not implemented!" + password.text, Toast.LENGTH_SHORT).show()
     }
 }
