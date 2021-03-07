@@ -14,7 +14,7 @@ import ipvc.estg.smartcities.entities.Notes
 import ipvc.estg.smartcities.viewModel.NotesViewModel
 import java.util.*
 
-class Notes : AppCompatActivity() {
+class Notes : AppCompatActivity(), NotesAdapter.onItemClickListener {
     private lateinit var notesViewModel: NotesViewModel
     private val newWordActivityRequestCode = 1
 
@@ -24,9 +24,10 @@ class Notes : AppCompatActivity() {
 
 
         val recyclerview = findViewById<RecyclerView>(R.id.recyclerview)
-        val adapter = NotesAdapter(this)
+        val adapter = NotesAdapter(this,this)
         recyclerview.adapter = adapter
         recyclerview.layoutManager = LinearLayoutManager(this)
+
 
         //view model
         notesViewModel = ViewModelProvider(this).get(NotesViewModel::class.java)
@@ -53,6 +54,10 @@ class Notes : AppCompatActivity() {
         } else {
             Toast.makeText(applicationContext, getString(R.string.field_is_empty), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    override fun onItemClick(position: Int, title: String) {
+        Toast.makeText(this, position.toString() + " - " + title, Toast.LENGTH_SHORT).show()
     }
 
 }
