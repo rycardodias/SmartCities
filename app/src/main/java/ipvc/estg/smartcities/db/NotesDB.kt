@@ -16,7 +16,8 @@ import java.util.*
 abstract class NotesDB : RoomDatabase() {
     abstract fun notesDao(): NotesDao
 
-    private class WordDatabaseCallback(private val scope: CoroutineScope):RoomDatabase.Callback(){
+    private class WordDatabaseCallback(private val scope: CoroutineScope) :
+        RoomDatabase.Callback() {
         override fun onOpen(db: SupportSQLiteDatabase) {
             super.onOpen(db)
             INSTANCE?.let { database ->
@@ -33,13 +34,14 @@ abstract class NotesDB : RoomDatabase() {
             }
         }
     }
+
     companion object {
         @Volatile
-        private var INSTANCE:NotesDB? = null
+        private var INSTANCE: NotesDB? = null
 
         fun getDatabase(context: Context, scope: CoroutineScope): NotesDB {
             val tempInstance = INSTANCE
-            if (tempInstance!= null) {
+            if (tempInstance != null) {
                 return tempInstance
             }
             // criacao da base de dados
@@ -49,13 +51,13 @@ abstract class NotesDB : RoomDatabase() {
                     NotesDB::class.java,
                     "notes_database"
                 )
-                        //destruicao
+                    //destruicao
 //                    .fallbackToDestructiveMigration()
                     .addCallback(WordDatabaseCallback(scope))
                     .build()
 
                 INSTANCE = instance
-                return  instance
+                return instance
             }
         }
     }

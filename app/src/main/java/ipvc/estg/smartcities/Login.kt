@@ -24,10 +24,6 @@ Login : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.login)
 
-        //val request = ServiceBuilder.buildService(Endpoints::class.java)
-        //val call = request.getUsers("rycardo.dias@hotmail.com", "1")
-
-
         email = findViewById(R.id.email_et)
         password = findViewById(R.id.password_et)
         loginButton = findViewById(R.id.login_bt)
@@ -35,7 +31,6 @@ Login : AppCompatActivity() {
         //call the method that verify if editText values are null
         email.addTextChangedListener(textWatcher)
         password.addTextChangedListener(textWatcher)
-
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -68,9 +63,6 @@ Login : AppCompatActivity() {
     }
 
     fun loginButton(view: View) {
-//        val intent = Intent(this, Map::class.java)
-//        startActivity(intent)
-//        Toast.makeText(this, "Email: " + email.text + " Password: " + password.text, Toast.LENGTH_SHORT).show()
         Toast.makeText(this, "Not implemented!" + password.text, Toast.LENGTH_SHORT).show()
     }
 }

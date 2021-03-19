@@ -1,10 +1,7 @@
 package ipvc.estg.smartcities.dao
 
 import androidx.lifecycle.LiveData
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
 import ipvc.estg.smartcities.entities.Notes
 
 @Dao
@@ -17,5 +14,12 @@ interface NotesDao {
 
     @Query("DELETE FROM notes_table")
     suspend fun deleteAll()
+
+    @Query("DELETE FROM notes_table WHERE id = :id")
+    fun deleteById(id: Int)
+
+//    @Update
+//    fun editById(id: Int)
+
 
 }

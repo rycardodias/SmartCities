@@ -1,18 +1,23 @@
 package ipvc.estg.smartcities.adapter
 
+import android.R.attr.data
+import android.content.ClipDescription
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
-import ipvc.estg.smartcities.entities.Notes
 import ipvc.estg.smartcities.R
+import ipvc.estg.smartcities.entities.Notes
+import ipvc.estg.smartcities.viewModel.NotesViewModel
+
 
 class NotesAdapter internal constructor(
-    context: Context,
-    private val listener: onItemClickListener
+    context: Context, private val listener: onItemClickListener
 ) : RecyclerView.Adapter<NotesAdapter.NotesViewHolder>() {
     private val inflater: LayoutInflater = LayoutInflater.from(context)
     private var notes = emptyList<Notes>()
@@ -22,6 +27,8 @@ class NotesAdapter internal constructor(
         val title: TextView = itemView.findViewById(R.id.tv_title)
         val description: TextView = itemView.findViewById(R.id.tv_description)
         val date: TextView = itemView.findViewById(R.id.tv_date)
+        val editButton: Button = itemView.findViewById(R.id.bt_edit)
+        val deleteButton: Button = itemView.findViewById(R.id.bt_delete)
 
         init {
             itemView.setOnClickListener(this)
@@ -30,15 +37,18 @@ class NotesAdapter internal constructor(
         // metodo do click no item da lista
         override fun onClick(v: View?) {
             val position = adapterPosition
+            val id = notes[position].id!!;
             val title = notes[position].title.toString()
-            if (position != RecyclerView.NO_POSITION) {
-                listener.onItemClick(position, title)
-            }
+//            if (position != RecyclerView.NO_POSITION) {
+//                listener.onItemClick(position, id, title)
+//            }
         }
     }
 
     interface onItemClickListener {
-        fun onItemClick(position: Int, title: String)
+//        fun onItemClick(position: Int, id: Int, title: String)
+        fun onEditClick(id: Int, title: String, description: String)
+        fun onDeleteClick(id: Int)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NotesViewHolder {
@@ -48,9 +58,15 @@ class NotesAdapter internal constructor(
 
     override fun onBindViewHolder(holder: NotesViewHolder, position: Int) {
         val current = notes[position]
-        holder.title.text = current.title
+        holder.title.text = current.title + current.id.toString()
         holder.description.text = current.description
         holder.date.text = current.date.toString()
+        holder.editButton.setOnClickListener {
+            listener.onEditClick(current.id!!, current.title!!, current.description!!)
+        }
+        holder.deleteButton.setOnClickListener {
+            listener.onDeleteClick(current.id!!)
+        }
     }
 
     internal fun setNotes(notes: List<Notes>) {

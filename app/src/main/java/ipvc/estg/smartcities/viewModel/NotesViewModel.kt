@@ -1,5 +1,6 @@
 package ipvc.estg.smartcities.viewModel
 
+import android.R.attr.data
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
@@ -24,4 +25,13 @@ class NotesViewModel(application: Application): AndroidViewModel(application) {
     fun insert(notes: Notes) = viewModelScope.launch(Dispatchers.IO) {
         repository.insert(notes)
     }
+
+    fun deleteById(id: Int) = viewModelScope.launch(Dispatchers.IO) {
+        repository.deleteById(id)
+    }
+
+//    fun editById(id: Int) = viewModelScope.launch(Dispatchers.IO) {
+//        repository.editById(id)
+//    }
+
 }

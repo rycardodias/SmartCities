@@ -10,4 +10,14 @@ class NotesRepository(private val notesDao: NotesDao) {
     suspend fun insert(notes: Notes) {
         notesDao.insert(notes)
     }
+
+    suspend fun deleteById(id: Int) {
+        notesDao.deleteById(id)
+    }
+
+//    suspend fun editById(id: Int) {
+//        notesDao.editById(id)
+//    }
+
+
 }

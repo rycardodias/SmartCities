@@ -17,6 +17,7 @@ class AddNotes : AppCompatActivity() {
     private lateinit var title: EditText
     private lateinit var description: EditText
     private lateinit var button: Button
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_notes)

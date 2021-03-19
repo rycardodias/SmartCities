@@ -11,4 +11,5 @@
     <string name="edit">Edit</string>
     <string name="add_notes">Add Notes</string>
     <string name="field_is_empty">Field is empty</string>
+    <string name="edit_notes">Edit Notes</string>
 </resources>
