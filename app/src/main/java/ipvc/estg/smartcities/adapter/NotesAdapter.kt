@@ -46,7 +46,6 @@ class NotesAdapter internal constructor(
     }
 
     interface onItemClickListener {
-//        fun onItemClick(position: Int, id: Int, title: String)
         fun onEditClick(id: Int, title: String, description: String)
         fun onDeleteClick(id: Int)
     }
@@ -58,7 +57,7 @@ class NotesAdapter internal constructor(
 
     override fun onBindViewHolder(holder: NotesViewHolder, position: Int) {
         val current = notes[position]
-        holder.title.text = current.title + current.id.toString()
+        holder.title.text = current.title
         holder.description.text = current.description
         holder.date.text = current.date.toString()
         holder.editButton.setOnClickListener {

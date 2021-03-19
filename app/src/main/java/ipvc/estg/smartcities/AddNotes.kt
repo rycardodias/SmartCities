@@ -2,6 +2,7 @@ package ipvc.estg.smartcities
 
 import android.app.Activity
 import android.content.Intent
+import android.os.Build.ID
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Editable
@@ -35,6 +36,7 @@ class AddNotes : AppCompatActivity() {
             } else {
                 val title = title.text.toString()
                 val description = description.text.toString()
+                replyIntent.putExtra(ID,  intent.getIntExtra("ID", 0))
                 replyIntent.putExtra(TITLE,  title)
                 replyIntent.putExtra(DESCRIPTION, description)
                 replyIntent.putExtra(DATE, Date().toString())
@@ -42,9 +44,17 @@ class AddNotes : AppCompatActivity() {
             }
             finish()
         }
+
+        //altera o texto
+        title.setText(intent.getStringExtra("TITLE"))
+        description.setText(intent.getStringExtra("DESCRIPTION"))
+        if (intent.getIntExtra("ID", 0) != 0) {
+            button.setText("Edit Note")
+        }
     }
 
     companion object {
+        const val ID = "com.example.android.id"
         const val TITLE = "com.example.android.title"
         const val DESCRIPTION = "com.example.android.country"
         const val DATE = "com.example.android.date"

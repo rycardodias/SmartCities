@@ -30,8 +30,8 @@ class NotesViewModel(application: Application): AndroidViewModel(application) {
         repository.deleteById(id)
     }
 
-//    fun editById(id: Int) = viewModelScope.launch(Dispatchers.IO) {
-//        repository.editById(id)
-//    }
+    fun update(notes: Notes) = viewModelScope.launch(Dispatchers.IO) {
+        repository.update(notes)
+    }
 
 }

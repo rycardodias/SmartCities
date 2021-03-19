@@ -15,9 +15,9 @@ class NotesRepository(private val notesDao: NotesDao) {
         notesDao.deleteById(id)
     }
 
-//    suspend fun editById(id: Int) {
-//        notesDao.editById(id)
-//    }
+    suspend fun update(notes: Notes) {
+        notesDao.update(notes)
+    }
 
 
 }
