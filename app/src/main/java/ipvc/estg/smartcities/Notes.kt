@@ -2,14 +2,11 @@ package ipvc.estg.smartcities
 
 import android.app.Activity
 import android.content.Intent
-import android.icu.text.CaseMap
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
-import android.view.View
-import android.widget.Button
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -17,6 +14,7 @@ import ipvc.estg.smartcities.adapter.NotesAdapter
 import ipvc.estg.smartcities.entities.Notes
 import ipvc.estg.smartcities.viewModel.NotesViewModel
 import java.util.*
+
 
 class Notes : AppCompatActivity(), NotesAdapter.onItemClickListener {
     private lateinit var notesViewModel: NotesViewModel
@@ -28,13 +26,20 @@ class Notes : AppCompatActivity(), NotesAdapter.onItemClickListener {
         setContentView(R.layout.activity_notes)
 
         val recyclerview = findViewById<RecyclerView>(R.id.recyclerview)
-        val adapter = NotesAdapter(this,this)
+        val adapter = NotesAdapter(this, this)
         recyclerview.adapter = adapter
         recyclerview.layoutManager = LinearLayoutManager(this)
+        recyclerview.addItemDecoration(
+            DividerItemDecoration(
+                recyclerview.context,
+                DividerItemDecoration.VERTICAL
+            )
+        )
+
 
         //view model
         notesViewModel = ViewModelProvider(this).get(NotesViewModel::class.java)
-        notesViewModel.allNotes.observe(this, {notes -> notes?.let { adapter.setNotes(it) }})
+        notesViewModel.allNotes.observe(this, { notes -> notes?.let { adapter.setNotes(it) } })
 
         //fab
         val fab = findViewById<FloatingActionButton>(R.id.fab)
@@ -61,7 +66,11 @@ class Notes : AppCompatActivity(), NotesAdapter.onItemClickListener {
                 notesViewModel.update(notes)
             }
         } else {
-            Toast.makeText(applicationContext, getString(R.string.field_is_empty), Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                applicationContext,
+                getString(R.string.field_is_empty),
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 

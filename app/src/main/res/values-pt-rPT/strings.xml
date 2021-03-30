@@ -5,5 +5,11 @@
     <string name="Enter_your_email">Email</string>
     <string name="enter_your_password">Password</string>
     <string name="login">Entrar</string>
-    <string name="smart_cities">Cidades Inteligentes</string>
+    <string name="delete">Eliminar</string>
+    <string name="edit">Editar</string>
+    <string name="add_notes">Adicionar Nota</string>
+    <string name="edit_notes">Editar Nota</string>
+    <string name="description">Descrição</string>
+    <string name="field_is_empty">Campo está vazio</string>
+    <string name="title">Titulo</string>
 </resources>

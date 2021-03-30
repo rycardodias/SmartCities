@@ -49,7 +49,7 @@ class AddNotes : AppCompatActivity() {
         title.setText(intent.getStringExtra("TITLE"))
         description.setText(intent.getStringExtra("DESCRIPTION"))
         if (intent.getIntExtra("ID", 0) != 0) {
-            button.setText("Edit Note")
+            button.text = getString(R.string.edit_notes)
         }
     }
 
