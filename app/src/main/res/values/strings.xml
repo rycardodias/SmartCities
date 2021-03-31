@@ -11,4 +11,5 @@
     <string name="field_is_empty">Field is empty</string>
     <string name="edit_notes">Edit Notes</string>
     <string name="title">Title</string>
+    <string name="email_password_incorrect">The email or password is incorrect!</string>
 </resources>
