@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
+import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -15,8 +16,17 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
+import ipvc.estg.smartcities.api.EndPoints
+import ipvc.estg.smartcities.api.MapIncidences
+import ipvc.estg.smartcities.api.ServiceBuilder
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class Maps : AppCompatActivity(), OnMapReadyCallback {
+
+    private lateinit var mapIncidences: List<MapIncidences>
 
     private lateinit var mMap: GoogleMap
     private lateinit var lastLocation: Location
@@ -28,7 +38,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequest: LocationRequest
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
@@ -37,6 +46,25 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
+        // adiciona pontos no mapa por webservices
+        val request = ServiceBuilder.buildService(EndPoints::class.java)
+        val call = request.getMapPoints()
+        var position: LatLng
+
+        call.enqueue(object : Callback<List<MapIncidences>> {
+            override fun onResponse(call: Call<List<MapIncidences>>, response: Response<List<MapIncidences>>) {
+                mapIncidences = response.body()!!
+                for (map in mapIncidences) {
+                    position = LatLng(map.latCoordinates.toDouble(), map.longCoordinates.toDouble())
+                    mMap.addMarker(MarkerOptions().position(position).title(map.title))
+                }
+            }
+
+            override fun onFailure(call: Call<List<MapIncidences>>, t: Throwable) {
+                Toast.makeText(this@Maps, "${t.message}", Toast.LENGTH_SHORT).show()
+            }
+        })
+
         //iniciar biblioteca localizacao
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 
@@ -44,19 +72,19 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             override fun onLocationResult(p0: LocationResult) {
                 super.onLocationResult(p0)
                 lastLocation = p0.lastLocation
-                var loc = LatLng(lastLocation.latitude, lastLocation.longitude)
+                val loc = LatLng(lastLocation.latitude, lastLocation.longitude)
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 15.0f))
+
+
             }
         }
-
         //pede a localização
         createLocationRequest()
-
     }
 
     private fun createLocationRequest() {
         locationRequest = LocationRequest()
-        locationRequest.interval = 2000
+        locationRequest.interval = 10000
         locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
     }
 
@@ -66,24 +94,21 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             && ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return
         }
-        fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null)
+        fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
     }
 
 
-    // Pedir permissões de acesso a localização
-    private fun getLocationAccess() {
+    // Adiciona a localização
+    private fun getLocation() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             //coloca a bolinha na localização
             mMap.isMyLocationEnabled = true
 
-            fusedLocationProviderClient.lastLocation.addOnSuccessListener(this) {
-                location ->
-
+            fusedLocationProviderClient.lastLocation.addOnSuccessListener(this) { location ->
                 if (location != null) {
                     lastLocation = location
-                    Toast.makeText(this, lastLocation.toString(), Toast.LENGTH_LONG).show()
                     val currentLatLng = LatLng(location.latitude, location.longitude)
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f))
                 }
             }
         } else {
@@ -109,12 +134,9 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-
-
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        getLocationAccess()
-
+        getLocation()
     }
 
     override fun onPause() {

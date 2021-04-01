@@ -11,4 +11,9 @@ interface EndPoints {
 
     @GET("users/login/{email}/{password}")
     fun getUserLogin(@Path("email") email: String, @Path("password") password: String): Call<User>
+
+    // MAP ENDPOINTS
+
+    @GET("map")
+    fun getMapPoints(): Call<List<MapIncidences>>
 }
