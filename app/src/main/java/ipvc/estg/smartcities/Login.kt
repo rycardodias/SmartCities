@@ -40,6 +40,9 @@ Login : AppCompatActivity() {
         email.addTextChangedListener(textWatcher)
         password.addTextChangedListener(textWatcher)
 
+        email.setText("rycardo.dias@hotmail.com")
+        password.setText("1")
+
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
