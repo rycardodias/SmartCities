@@ -73,7 +73,7 @@ Login : AppCompatActivity() {
 
     fun loginButton(view: View) {
         fun openMap() {
-            val intent = Intent(this, CityMap::class.java)
+            val intent = Intent(this, Maps::class.java)
             startActivity(intent)
         }
 
