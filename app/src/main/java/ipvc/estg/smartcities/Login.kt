@@ -1,6 +1,8 @@
 package ipvc.estg.smartcities
 
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Editable
@@ -30,7 +32,15 @@ Login : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.login)
 
+        // inicialização do SP e verificação dos dados
+        val sharedPreferences: SharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
 
+        val emailSP = sharedPreferences.getString("email", "")
+        val passwordSP = sharedPreferences.getString("password", "")
+
+        if (emailSP != "" && passwordSP != "") {
+            correctLogin()
+        }
 
         email = findViewById(R.id.email_et)
         password = findViewById(R.id.password_et)
@@ -40,30 +50,29 @@ Login : AppCompatActivity() {
         email.addTextChangedListener(textWatcher)
         password.addTextChangedListener(textWatcher)
 
-        email.setText("rycardo.dias@hotmail.com")
-        password.setText("1")
-
     }
 
+
+    // MENU DE OPÇOES
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         val inflater: MenuInflater = menuInflater
         inflater.inflate(R.menu.menu, menu)
+        menu!!.findItem(R.id.notesMenu).setVisible(true)
         return super.onCreateOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.notes -> {
+            R.id.notesMenu -> {
                 val intent = Intent(this, Notes::class.java)
                 startActivity(intent)
                 true
             }
             else -> super.onOptionsItemSelected(item)
         }
-
-
     }
 
+    //TEXT WATCHER
     private val textWatcher = object : TextWatcher {
         override fun afterTextChanged(s: Editable?) {}
         override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -74,19 +83,28 @@ Login : AppCompatActivity() {
         }
     }
 
-    fun loginButton(view: View) {
-        fun openMap() {
-            val intent = Intent(this, Maps::class.java)
-            startActivity(intent)
-        }
+    fun correctLogin() {
+        val intent = Intent(this, Maps::class.java)
+        startActivity(intent)
+    }
 
+    fun loginButton(view: View) {
+        // faz o request dos dados de login
         val request = ServiceBuilder.buildService(EndPoints::class.java)
         val call = request.getUserLogin(email.text.toString(), password.text.toString())
 
         call.enqueue(object : Callback<User> {
             override fun onResponse(call: Call<User>, response: Response<User>) {
                 if (response.isSuccessful) {
-                    openMap()
+                    val sharedPreferences: SharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
+                    with(sharedPreferences.edit()) {
+                        putInt("id", response.body()!!.id)
+                        putString("name", response.body()!!.name)
+                        putString("email", email.text.toString())
+                        putString("password", password.text.toString())
+                        commit()
+                    }
+                    correctLogin()
                 }
             }
 

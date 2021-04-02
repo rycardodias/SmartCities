@@ -13,4 +13,7 @@
     <string name="title">Title</string>
     <string name="email_password_incorrect">The email or password is incorrect!</string>
     <string name="title_activity_maps">Map</string>
+    <string name="LoginData">LoginData</string>
+    <string name="Logout">logout</string>
+    <string name="Map">Map</string>
 </resources>

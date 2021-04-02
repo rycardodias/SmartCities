@@ -1,11 +1,17 @@
 package ipvc.estg.smartcities
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -25,7 +31,6 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class Maps : AppCompatActivity(), OnMapReadyCallback {
-
     private lateinit var mapIncidences: List<MapIncidences>
 
     private lateinit var mMap: GoogleMap
@@ -41,6 +46,9 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
+        //chamar o SP para controlar os dados
+        val sharedPreferences: SharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
@@ -56,7 +64,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 mapIncidences = response.body()!!
                 for (map in mapIncidences) {
                     position = LatLng(map.latCoordinates.toDouble(), map.longCoordinates.toDouble())
-                    mMap.addMarker(MarkerOptions().position(position).title(map.title))
+                    mMap.addMarker(MarkerOptions().position(position).title(map.title + " id: " + map.user_id))
                 }
             }
 
@@ -108,7 +116,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 if (location != null) {
                     lastLocation = location
                     val currentLatLng = LatLng(location.latitude, location.longitude)
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f))
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 25f))
                 }
             }
         } else {
@@ -138,6 +146,36 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         mMap = googleMap
         getLocation()
     }
+
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        val inflater: MenuInflater = menuInflater
+        inflater.inflate(R.menu.menu, menu)
+        menu!!.findItem(R.id.notesMenu).setVisible(true)
+        menu!!.findItem(R.id.logoutMenu).setVisible(true)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.notesMenu -> {
+                val intent = Intent(this, Notes::class.java)
+                startActivity(intent)
+                true
+            }
+            R.id.logoutMenu -> {
+                //limpa o ficheiro do SP
+                val sharedPreferences: SharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
+                sharedPreferences.edit().clear().apply()
+
+                val intent = Intent(this, Login::class.java)
+                startActivity(intent)
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
 
     override fun onPause() {
         super.onPause()

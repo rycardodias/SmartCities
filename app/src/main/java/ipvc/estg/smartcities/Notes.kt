@@ -1,8 +1,13 @@
 package ipvc.estg.smartcities
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
@@ -85,5 +90,35 @@ class Notes : AppCompatActivity(), NotesAdapter.onItemClickListener {
 
     override fun onDeleteClick(id: Int) {
         notesViewModel.deleteById(id)
+    }
+
+    // MENU DE OPÇOES
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        val inflater: MenuInflater = menuInflater
+        inflater.inflate(R.menu.menu, menu)
+        val sharedPreferences: SharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
+        if (sharedPreferences.getInt("id",0) == 0) {
+            menu!!.findItem(R.id.loginMenu).setVisible(true)
+        } else {
+            menu!!.findItem(R.id.mapMenu).setVisible(true)
+        }
+
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.loginMenu -> {
+                val intent = Intent(this, Login::class.java)
+                startActivity(intent)
+                true
+            }
+            R.id.mapMenu -> {
+                val intent = Intent(this, Maps::class.java)
+                startActivity(intent)
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 }
