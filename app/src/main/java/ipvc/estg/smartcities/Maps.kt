@@ -21,6 +21,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import ipvc.estg.smartcities.api.EndPoints
@@ -48,7 +49,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         setContentView(R.layout.activity_maps)
         //chamar o SP para controlar os dados
         val sharedPreferences: SharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
-
+        val id = sharedPreferences.getInt("id", 0)
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
@@ -60,11 +61,21 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         var position: LatLng
 
         call.enqueue(object : Callback<List<MapIncidences>> {
-            override fun onResponse(call: Call<List<MapIncidences>>, response: Response<List<MapIncidences>>) {
+            override fun onResponse(
+                call: Call<List<MapIncidences>>,
+                response: Response<List<MapIncidences>>
+            ) {
                 mapIncidences = response.body()!!
                 for (map in mapIncidences) {
                     position = LatLng(map.latCoordinates.toDouble(), map.longCoordinates.toDouble())
-                    mMap.addMarker(MarkerOptions().position(position).title(map.title + " id: " + map.user_id))
+
+                    // verifica se são pins do utilizador logado
+                    if (id == map.users_id) {
+                        mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
+                    } else {
+                        mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description))
+                    }
                 }
             }
 
@@ -170,6 +181,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
 
                 val intent = Intent(this, Login::class.java)
                 startActivity(intent)
+                finish()
                 true
             }
             else -> super.onOptionsItemSelected(item)

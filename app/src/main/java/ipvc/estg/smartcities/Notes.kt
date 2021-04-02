@@ -111,6 +111,7 @@ class Notes : AppCompatActivity(), NotesAdapter.onItemClickListener {
             R.id.loginMenu -> {
                 val intent = Intent(this, Login::class.java)
                 startActivity(intent)
+                finish()
                 true
             }
             R.id.mapMenu -> {
