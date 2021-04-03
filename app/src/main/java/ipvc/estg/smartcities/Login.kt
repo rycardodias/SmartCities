@@ -15,6 +15,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import ipvc.estg.smartcities.api.EndPoints
+import ipvc.estg.smartcities.api.MapIncidences
 import ipvc.estg.smartcities.api.ServiceBuilder
 import ipvc.estg.smartcities.api.User
 import retrofit2.Call
@@ -92,17 +93,19 @@ Login : AppCompatActivity() {
     fun loginButton(view: View) {
         // faz o request dos dados de login
         val request = ServiceBuilder.buildService(EndPoints::class.java)
-        val call = request.getUserLogin(email.text.toString(), password.text.toString())
+        val call = request.postLogin("rycardo.dias@hotmail.com", "1")
 
         call.enqueue(object : Callback<User> {
             override fun onResponse(call: Call<User>, response: Response<User>) {
                 if (response.isSuccessful) {
-                    val sharedPreferences: SharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
+                    val data = response.body()
+                    val sharedPreferences: SharedPreferences =
+                        getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
                     with(sharedPreferences.edit()) {
-                        putInt("id", response.body()!!.id)
-                        putString("name", response.body()!!.name)
-                        putString("email", email.text.toString())
-                        putString("password", password.text.toString())
+                        putInt("id", data!!.id)
+                        putString("name", data.name)
+                        putString("email", data.email)
+                        putString("password", data.password)
                         commit()
                     }
                     correctLogin()
@@ -113,6 +116,5 @@ Login : AppCompatActivity() {
                 Toast.makeText(this@Login, getString(R.string.email_password_incorrect), Toast.LENGTH_SHORT).show()
             }
         })
-
     }
 }

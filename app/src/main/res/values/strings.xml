@@ -16,4 +16,7 @@
     <string name="LoginData">LoginData</string>
     <string name="Logout">logout</string>
     <string name="Map">Map</string>
+    <string name="gps_not_granted">GPS permission not granted</string>
+    <string name="new_incidence">New incidence added!</string>
+    <string name="something_went_wrong">Something went wrong!</string>
 </resources>

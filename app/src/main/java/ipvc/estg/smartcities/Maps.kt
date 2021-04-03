@@ -47,9 +47,11 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
+
         //chamar o SP para controlar os dados
         val sharedPreferences: SharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
         val id = sharedPreferences.getInt("id", 0)
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
@@ -67,7 +69,8 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             ) {
                 mapIncidences = response.body()!!
                 for (map in mapIncidences) {
-                    position = LatLng(map.latCoordinates.toDouble(), map.longCoordinates.toDouble())
+                    position = LatLng(map.latCoordinates, map.longCoordinates)
+                    Log.d("###PONTOS ", map.latCoordinates.toString() + " - " + map.longCoordinates.toString())
 
                     // verifica se são pins do utilizador logado
                     if (id == map.users_id) {
@@ -92,7 +95,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 super.onLocationResult(p0)
                 lastLocation = p0.lastLocation
                 val loc = LatLng(lastLocation.latitude, lastLocation.longitude)
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 15.0f))
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 1.0f))
 
 
             }
@@ -103,7 +106,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
 
     private fun createLocationRequest() {
         locationRequest = LocationRequest()
-        locationRequest.interval = 10000
+        locationRequest.interval = 100000
         locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
     }
 
@@ -127,7 +130,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 if (location != null) {
                     lastLocation = location
                     val currentLatLng = LatLng(location.latitude, location.longitude)
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 25f))
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
                 }
             }
         } else {
@@ -148,7 +151,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 mMap.isMyLocationEnabled = true
             }
         } else {
-            Toast.makeText(this, "Localization permission not granted", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.gps_not_granted), Toast.LENGTH_LONG).show()
             //finish()
         }
     }
@@ -158,20 +161,38 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         getLocation()
     }
 
+    // adicionar novo ponto
+    fun addPoint() {
+        val request = ServiceBuilder.buildService(EndPoints::class.java)
+        val call = request.addPoint(2, 42.0772, -8.4919, "teste", "descricao", "", 1, 1)
+
+        call.enqueue(object : Callback<MapIncidences> {
+            override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
+                Toast.makeText(this@Maps, getString(R.string.new_incidence), Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onFailure(call: Call<MapIncidences>, t: Throwable) {
+                Toast.makeText(this@Maps, getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show()
+            }
+
+        })
+    }
+
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         val inflater: MenuInflater = menuInflater
         inflater.inflate(R.menu.menu, menu)
         menu!!.findItem(R.id.notesMenu).setVisible(true)
-        menu!!.findItem(R.id.logoutMenu).setVisible(true)
+        menu.findItem(R.id.logoutMenu).setVisible(true)
         return super.onCreateOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.notesMenu -> {
-                val intent = Intent(this, Notes::class.java)
-                startActivity(intent)
+                addPoint()
+//                val intent = Intent(this, Notes::class.java)
+//                startActivity(intent)
                 true
             }
             R.id.logoutMenu -> {
