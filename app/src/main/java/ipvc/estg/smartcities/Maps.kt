@@ -24,6 +24,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import ipvc.estg.smartcities.api.EndPoints
 import ipvc.estg.smartcities.api.MapIncidences
 import ipvc.estg.smartcities.api.ServiceBuilder
@@ -47,11 +48,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
-
-        //chamar o SP para controlar os dados
-        val sharedPreferences: SharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
-        val id = sharedPreferences.getInt("id", 0)
-
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
@@ -66,45 +62,14 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 lastLocation = p0.lastLocation
                 val loc = LatLng(lastLocation.latitude, lastLocation.longitude)
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 1.0f))
-
-
             }
         }
         //pede a localização
         createLocationRequest()
-        getPointsWS(id)
+        getPointsWS()
     }
 
-    private fun getPointsWS(id: Int) {
-        // adiciona pontos no mapa por webservices
-        val request = ServiceBuilder.buildService(EndPoints::class.java)
-        val call = request.getMapPoints()
-        var position: LatLng
 
-        call.enqueue(object : Callback<List<MapIncidences>> {
-            override fun onResponse(
-                call: Call<List<MapIncidences>>,
-                response: Response<List<MapIncidences>>
-            ) {
-                mapIncidences = response.body()!!
-                for (map in mapIncidences) {
-                    position = LatLng(map.latCoordinates, map.longCoordinates)
-                    Log.d("###PONTOS ", map.latCoordinates.toString() + " - " + map.longCoordinates.toString())
-
-                    // verifica se são pins do utilizador logado
-                    if (id == map.users_id) {
-                        mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
-                    } else {
-                        mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description))
-                    }
-                }
-            }
-            override fun onFailure(call: Call<List<MapIncidences>>, t: Throwable) {
-                Toast.makeText(this@Maps, "${t.message}", Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
 
     private fun createLocationRequest() {
         locationRequest = LocationRequest()
@@ -132,7 +97,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 if (location != null) {
                     lastLocation = location
                     val currentLatLng = LatLng(location.latitude, location.longitude)
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15.0f))
                 }
             }
         } else {
@@ -162,15 +127,50 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         getLocation()
 
         mMap.setOnMapLongClickListener() {
-            Toast.makeText(this, it.latitude.toString() + " - " + it.longitude.toString(), Toast.LENGTH_LONG).show()
             val user_id = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE).getInt("id", 0)
             addPointWS(user_id,it.latitude, it.longitude, "teste", "description", "", 1, 0)
-            //mMap.addMarker(MarkerOptions().position(it))
         }
-
     }
 
-    // adicionar novo ponto
+    /**
+     *  Vai buscar os pontos ao servidor
+     */
+    private fun getPointsWS() {
+        //vai buscar o id para controlar a cor das marks por utilizador
+        val id = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE).getInt("id", 0)
+
+        // adiciona pontos no mapa por webservices
+        val request = ServiceBuilder.buildService(EndPoints::class.java)
+        val call = request.getMapPoints()
+        var position: LatLng
+
+        call.enqueue(object : Callback<List<MapIncidences>> {
+            override fun onResponse(
+                call: Call<List<MapIncidences>>,
+                response: Response<List<MapIncidences>>
+            ) {
+                mapIncidences = response.body()!!
+                for (map in mapIncidences) {
+                    position = LatLng(map.latCoordinates, map.longCoordinates)
+
+                    // verifica se são pins do utilizador logado
+                    if (id == map.users_id) {
+                        mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
+                    } else {
+                        mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description))
+                    }
+                }
+            }
+            override fun onFailure(call: Call<List<MapIncidences>>, t: Throwable) {
+                Toast.makeText(this@Maps, "${t.message}", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    /**
+     * adiciona mark no servidor
+     */
     fun addPointWS(user_id: Int, latCoordinates: Double, longCoordinates: Double,
                  title: String, description: String, image: String, carTrafficProblem: Int, solved: Int) {
 
@@ -180,6 +180,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         call.enqueue(object : Callback<MapIncidences> {
             override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
                 Toast.makeText(this@Maps, getString(R.string.new_incidence), Toast.LENGTH_SHORT).show()
+                getPointsWS()
             }
 
             override fun onFailure(call: Call<MapIncidences>, t: Throwable) {
@@ -188,6 +189,8 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
 
         })
     }
+
+
 
     /**
         *MENU DE OPCOES

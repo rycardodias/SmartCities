@@ -33,13 +33,8 @@ Login : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.login)
 
-        // inicialização do SP e verificação dos dados
-        val sharedPreferences: SharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
-
-        val emailSP = sharedPreferences.getString("email", "")
-        val passwordSP = sharedPreferences.getString("password", "")
-
-        if (emailSP != "" && passwordSP != "") {
+        // inicialização do SP e verificação dos dados para login
+        if(getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE).getInt("id", 0)!= 0) {
             correctLogin()
         }
 
@@ -93,22 +88,25 @@ Login : AppCompatActivity() {
     fun loginButton(view: View) {
         // faz o request dos dados de login
         val request = ServiceBuilder.buildService(EndPoints::class.java)
-        val call = request.postLogin("rycardo.dias@hotmail.com", "1")
+        val call = request.postLogin(email.text.toString(), password.text.toString())
 
         call.enqueue(object : Callback<User> {
             override fun onResponse(call: Call<User>, response: Response<User>) {
                 if (response.isSuccessful) {
                     val data = response.body()
-                    val sharedPreferences: SharedPreferences =
+
+                    if (data?.id != null) {
+                        val sharedPreferences: SharedPreferences =
                         getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
-                    with(sharedPreferences.edit()) {
-                        putInt("id", data!!.id)
-                        putString("name", data.name)
-                        putString("email", data.email)
-                        putString("password", data.password)
-                        commit()
+                        with(sharedPreferences.edit()) {
+                            putInt("id", data!!.id)
+                            putString("name", data.name)
+//                            putString("email", data.email)
+//                            putString("password", data.password)
+                            commit()
+                        }
+                        correctLogin()
                     }
-                    correctLogin()
                 }
             }
 
