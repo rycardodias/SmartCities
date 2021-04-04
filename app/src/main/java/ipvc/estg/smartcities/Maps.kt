@@ -57,6 +57,25 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
+        //iniciar biblioteca localizacao
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
+
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(p0: LocationResult) {
+                super.onLocationResult(p0)
+                lastLocation = p0.lastLocation
+                val loc = LatLng(lastLocation.latitude, lastLocation.longitude)
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 1.0f))
+
+
+            }
+        }
+        //pede a localização
+        createLocationRequest()
+        getPointsWS(id)
+    }
+
+    private fun getPointsWS(id: Int) {
         // adiciona pontos no mapa por webservices
         val request = ServiceBuilder.buildService(EndPoints::class.java)
         val call = request.getMapPoints()
@@ -81,27 +100,10 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                     }
                 }
             }
-
             override fun onFailure(call: Call<List<MapIncidences>>, t: Throwable) {
                 Toast.makeText(this@Maps, "${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
-
-        //iniciar biblioteca localizacao
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
-
-        locationCallback = object : LocationCallback() {
-            override fun onLocationResult(p0: LocationResult) {
-                super.onLocationResult(p0)
-                lastLocation = p0.lastLocation
-                val loc = LatLng(lastLocation.latitude, lastLocation.longitude)
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 1.0f))
-
-
-            }
-        }
-        //pede a localização
-        createLocationRequest()
     }
 
     private fun createLocationRequest() {
@@ -152,19 +154,28 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             }
         } else {
             Toast.makeText(this, getString(R.string.gps_not_granted), Toast.LENGTH_LONG).show()
-            //finish()
         }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         getLocation()
+
+        mMap.setOnMapLongClickListener() {
+            Toast.makeText(this, it.latitude.toString() + " - " + it.longitude.toString(), Toast.LENGTH_LONG).show()
+            val user_id = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE).getInt("id", 0)
+            addPointWS(user_id,it.latitude, it.longitude, "teste", "description", "", 1, 0)
+            //mMap.addMarker(MarkerOptions().position(it))
+        }
+
     }
 
     // adicionar novo ponto
-    fun addPoint() {
+    fun addPointWS(user_id: Int, latCoordinates: Double, longCoordinates: Double,
+                 title: String, description: String, image: String, carTrafficProblem: Int, solved: Int) {
+
         val request = ServiceBuilder.buildService(EndPoints::class.java)
-        val call = request.addPoint(2, 42.0772, -8.4919, "teste", "descricao", "", 1, 1)
+        val call = request.addPoint(user_id, latCoordinates, longCoordinates, title, description, image, carTrafficProblem, solved)
 
         call.enqueue(object : Callback<MapIncidences> {
             override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
@@ -178,7 +189,9 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         })
     }
 
-
+    /**
+        *MENU DE OPCOES
+    **/
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         val inflater: MenuInflater = menuInflater
         inflater.inflate(R.menu.menu, menu)
@@ -190,9 +203,8 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.notesMenu -> {
-                addPoint()
-//                val intent = Intent(this, Notes::class.java)
-//                startActivity(intent)
+                val intent = Intent(this, Notes::class.java)
+                startActivity(intent)
                 true
             }
             R.id.logoutMenu -> {
