@@ -186,11 +186,24 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             override fun onFailure(call: Call<MapIncidences>, t: Throwable) {
                 Toast.makeText(this@Maps, getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show()
             }
-
         })
     }
 
+    fun deletePointWS(id: Int) {
+        val request = ServiceBuilder.buildService(EndPoints::class.java)
+        val call = request.deletePoint(id)
 
+        call.enqueue(object : Callback<MapIncidences> {
+            override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
+                Toast.makeText(this@Maps, getString(R.string.mark_was_deleted), Toast.LENGTH_SHORT).show()
+                getPointsWS()
+            }
+
+            override fun onFailure(call: Call<MapIncidences>, t: Throwable) {
+                Toast.makeText(this@Maps, getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
 
     /**
         *MENU DE OPCOES

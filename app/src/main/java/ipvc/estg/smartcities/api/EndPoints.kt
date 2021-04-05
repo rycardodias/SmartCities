@@ -9,8 +9,8 @@ interface EndPoints {
     @GET("users")
     fun getUsers(): Call<List<User>> //é usado o List porque a resposta vem num array
 
-    @GET("users/login/{email}/{password}")
-    fun getUserLogin(@Path("email") email: String, @Path("password") password: String): Call<User>
+//    @GET("users/login/{email}/{password}")
+//    fun getUserLogin(@Path("email") email: String, @Path("password") password: String): Call<User>
 
     @FormUrlEncoded
     @POST("users/login")
@@ -31,5 +31,9 @@ interface EndPoints {
                  @Field("carTrafficProblem") carTrafficProblem: Int,
                  @Field("solved") solved: Int
     ): Call<MapIncidences>
+
+    @DELETE("map/delete/{id}")
+    fun deletePoint(@Path("id") id: Int): Call<MapIncidences>
+
 
 }
