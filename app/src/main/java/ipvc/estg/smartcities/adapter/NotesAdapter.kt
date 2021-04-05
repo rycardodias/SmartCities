@@ -1,20 +1,14 @@
 package ipvc.estg.smartcities.adapter
 
-import android.R.attr.data
-import android.content.ClipDescription
 import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
-import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import ipvc.estg.smartcities.R
 import ipvc.estg.smartcities.entities.Notes
-import ipvc.estg.smartcities.viewModel.NotesViewModel
 
 
 class NotesAdapter internal constructor(
@@ -29,7 +23,7 @@ class NotesAdapter internal constructor(
         val description: TextView = itemView.findViewById(R.id.tv_description)
         val date: TextView = itemView.findViewById(R.id.tv_date)
         val editButton: ImageButton = itemView.findViewById(R.id.bt_edit)
-        val deleteButton: ImageButton = itemView.findViewById(R.id.bt_delete)
+        val deleteButton: ImageButton = itemView.findViewById(R.id.cm_delete)
 
         init {
             itemView.setOnClickListener(this)

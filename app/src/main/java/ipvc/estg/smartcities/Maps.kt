@@ -1,17 +1,23 @@
 package ipvc.estg.smartcities
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.Location
+import android.media.Image
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.view.View
+import android.widget.Button
+import android.widget.ImageButton
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -23,6 +29,7 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import ipvc.estg.smartcities.api.EndPoints
@@ -125,10 +132,42 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         getLocation()
+        mMap.setInfoWindowAdapter(CustomInfoWindowForGoogleMap(this))
 
         mMap.setOnMapLongClickListener() {
             val user_id = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE).getInt("id", 0)
             addPointWS(user_id,it.latitude, it.longitude, "teste", "description", "", 1, 0)
+        }
+    }
+
+    class CustomInfoWindowForGoogleMap(context: Context) : GoogleMap.InfoWindowAdapter {
+
+        var mContext = context
+        var mWindow = (context as Activity).layoutInflater.inflate(R.layout.custom_marker_window, null)
+
+        private fun rendowWindowText(marker: Marker, view: View){
+
+            val tvTitle = view.findViewById<TextView>(R.id.cm_title)
+            val tvDescription = view.findViewById<TextView>(R.id.cm_description)
+            val bt_delete = view.findViewById<ImageButton>(R.id.cm_delete)
+
+            bt_delete.setOnClickListener {
+                Log.d("###LOGG", marker.id.toString())
+            }
+
+            tvTitle.text = marker.title
+            tvDescription.text = marker.snippet
+
+        }
+
+        override fun getInfoContents(marker: Marker): View {
+            rendowWindowText(marker, mWindow)
+            return mWindow
+        }
+
+        override fun getInfoWindow(marker: Marker): View? {
+            rendowWindowText(marker, mWindow)
+            return mWindow
         }
     }
 
@@ -156,7 +195,9 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                     // verifica se são pins do utilizador logado
                     if (id == map.users_id) {
                         mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
+                            .icon(BitmapDescriptorFactory.
+                                //fromBitmap()))
+                            defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
                     } else {
                         mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description))
                     }
@@ -189,6 +230,9 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         })
     }
 
+    /**
+     *  eliminar pontos por id
+     */
     fun deletePointWS(id: Int) {
         val request = ServiceBuilder.buildService(EndPoints::class.java)
         val call = request.deletePoint(id)
