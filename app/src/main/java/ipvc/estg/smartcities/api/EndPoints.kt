@@ -20,6 +20,9 @@ interface EndPoints {
     @GET("map")
     fun getMapPoints(): Call<List<MapIncidences>>
 
+    @GET("map/carTrafficProblem/{id}")
+    fun getMapPointsTrafficProblem(@Path("id") id: Int): Call<List<MapIncidences>>
+
     @FormUrlEncoded
     @POST("map/add")
     fun addPoint(@Field("users_id") users_id: Int,

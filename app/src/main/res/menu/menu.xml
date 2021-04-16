@@ -9,6 +9,10 @@
         android:title="Login"
         app:showAsAction="always"
         android:visible="false"/>
+    <item android:id="@+id/addMarker"
+        android:title="@string/add"
+        app:showAsAction="always"
+        android:visible="false"/>
     <item android:id="@+id/logoutMenu"
         android:title="@string/Logout"
         app:showAsAction="always"
@@ -18,4 +22,6 @@
         android:title="@string/Map"
         app:showAsAction="always"
         android:visible="false"/>
+
+
 </menu>

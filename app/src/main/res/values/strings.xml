@@ -20,4 +20,7 @@
     <string name="new_incidence">New incidence added!</string>
     <string name="something_went_wrong">Something went wrong!</string>
     <string name="mark_was_deleted">Mark was deleted!</string>
+    <string name="add_marker">Add marker</string>
+    <string name="traffic_problem">Traffic problem</string>
+    <string name="add">Add</string>
 </resources>
