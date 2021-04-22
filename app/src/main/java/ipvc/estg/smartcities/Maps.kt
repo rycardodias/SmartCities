@@ -137,7 +137,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         getLocation()
-        mMap.setInfoWindowAdapter(CustomInfoWindowForGoogleMap(this))
+//        mMap.setInfoWindowAdapter(CustomInfoWindowForGoogleMap(this))
 //        mMap.setOnInfoWindowClickListener {
 //            Toast.makeText(this, "teste", Toast.LENGTH_SHORT).show()
 //        }
@@ -153,32 +153,32 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     /**
      * Janelinha no mapa
      */
-    class CustomInfoWindowForGoogleMap(context: Context) : GoogleMap.InfoWindowAdapter {
-        var mContext = context
-        var mWindow = (context as Activity).layoutInflater.inflate(R.layout.custom_marker_window, null)
-
-        private fun rendowWindowText(marker: Marker, view: View) {
-
-            val tvTitle = view.findViewById<TextView>(R.id.cm_title)
-            val tvDescription = view.findViewById<TextView>(R.id.cm_description)
-            val bt_delete = view.findViewById<ImageButton>(R.id.cm_delete)
-            val im_foto = view.findViewById<ImageView>(R.id.im_foto)
-
-            tvTitle.text = marker.title.toString()
-            tvDescription.text = marker.snippet
-
-        }
-
-        override fun getInfoContents(marker: Marker): View {
-            rendowWindowText(marker, mWindow)
-            return mWindow
-        }
-
-        override fun getInfoWindow(marker: Marker): View? {
-            rendowWindowText(marker, mWindow)
-            return mWindow
-        }
-    }
+//    class CustomInfoWindowForGoogleMap(context: Context) : GoogleMap.InfoWindowAdapter {
+//        var mContext = context
+//        var mWindow = (context as Activity).layoutInflater.inflate(R.layout.custom_marker_window, null)
+//
+//        private fun rendowWindowText(marker: Marker, view: View) {
+//
+//            val tvTitle = view.findViewById<TextView>(R.id.cm_title)
+//            val tvDescription = view.findViewById<TextView>(R.id.cm_description)
+//            val bt_delete = view.findViewById<ImageButton>(R.id.cm_delete)
+//            val im_foto = view.findViewById<ImageView>(R.id.im_foto)
+//
+//            tvTitle.text = marker.title.toString()
+//            tvDescription.text = marker.snippet
+//
+//        }
+//
+//        override fun getInfoContents(marker: Marker): View {
+//            rendowWindowText(marker, mWindow)
+//            return mWindow
+//        }
+//
+//        override fun getInfoWindow(marker: Marker): View? {
+//            rendowWindowText(marker, mWindow)
+//            return mWindow
+//        }
+//    }
 
     /**
      *  Vai buscar os pontos ao servidor
