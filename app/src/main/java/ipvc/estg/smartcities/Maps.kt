@@ -2,6 +2,7 @@ package ipvc.estg.smartcities
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -9,14 +10,9 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
 import android.os.Looper
-import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
-import android.view.View
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -31,13 +27,14 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import ipvc.estg.smartcities.adapter.NotesAdapter
 import ipvc.estg.smartcities.api.EndPoints
 import ipvc.estg.smartcities.api.MapIncidences
 import ipvc.estg.smartcities.api.ServiceBuilder
+import ipvc.estg.smartcities.api.User
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+
 
 class Maps : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mapIncidences: List<MapIncidences>
@@ -52,12 +49,27 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequest: LocationRequest
 
+    //guarda id dos marcadores
+    val markerIdMapping: HashMap<Marker, Int> = HashMap()
+    lateinit var marker: Marker
+
+    private var createMarker = 1
+    private var editMarker = 2
+
+    private lateinit var sharedPreferences: SharedPreferences
+
+
+    var user_id = 0;
+    var user_ids = 0;
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
+
         mapFragment.getMapAsync(this)
+
+        sharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
 
         //iniciar biblioteca localizacao
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
@@ -78,7 +90,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         val fab = findViewById<FloatingActionButton>(R.id.fab)
         fab.setOnClickListener {
             val intent = Intent(this@Maps, AddMarker::class.java)
-            startActivityForResult(intent, 1)
+            startActivityForResult(intent, createMarker)
         }
     }
 
@@ -137,57 +149,67 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         getLocation()
-//        mMap.setInfoWindowAdapter(CustomInfoWindowForGoogleMap(this))
-//        mMap.setOnInfoWindowClickListener {
-//            Toast.makeText(this, "teste", Toast.LENGTH_SHORT).show()
-//        }
-//        mMap.setOnMapLongClickListener() {
-//            val user_id = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE).getInt("id", 0)
-//            addPointWS(user_id,it.latitude, it.longitude, "teste", "description", "", 1, 0)
-//        }
+
+        googleMap.setOnInfoWindowLongClickListener {
+            val request = ServiceBuilder.buildService(EndPoints::class.java)
+            val call = request.getMapPointsById(markerIdMapping.get(it)!!)
+
+            call.enqueue(object : Callback<MapIncidences> {
+                override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
+                    if (response.isSuccessful) {
+                        val data = response.body()
+
+                        if (data?.users_id == sharedPreferences.getInt("id", 0)) {
+
+                            val alertDialogBuilder = AlertDialog.Builder(this@Maps)
+                                .setTitle(getString(R.string.do_you_want_to_modify_marker))
+
+                            alertDialogBuilder.setNeutralButton(R.string.edit) { dialog, which ->
+                                editarMarker(data.id,data.title, data.description, "", data.carTrafficProblem, data.solved)
+
+                            }
+                            alertDialogBuilder.setNegativeButton("Delete") { dialog, which ->
+                                deletePointWS(data.id)
+                                mMap.clear()
+                            }
+                            alertDialogBuilder.show()
 
 
+                        }
+                    }
+                }
+
+                override fun onFailure(call: Call<MapIncidences>, t: Throwable) {
+                    Toast.makeText(this@Maps, "${t.message}", Toast.LENGTH_SHORT).show()
+                }
+            })
+        }
     }
 
-
-    /**
-     * Janelinha no mapa
-     */
-//    class CustomInfoWindowForGoogleMap(context: Context) : GoogleMap.InfoWindowAdapter {
-//        var mContext = context
-//        var mWindow = (context as Activity).layoutInflater.inflate(R.layout.custom_marker_window, null)
-//
-//        private fun rendowWindowText(marker: Marker, view: View) {
-//
-//            val tvTitle = view.findViewById<TextView>(R.id.cm_title)
-//            val tvDescription = view.findViewById<TextView>(R.id.cm_description)
-//            val bt_delete = view.findViewById<ImageButton>(R.id.cm_delete)
-//            val im_foto = view.findViewById<ImageView>(R.id.im_foto)
-//
-//            tvTitle.text = marker.title.toString()
-//            tvDescription.text = marker.snippet
-//
-//        }
-//
-//        override fun getInfoContents(marker: Marker): View {
-//            rendowWindowText(marker, mWindow)
-//            return mWindow
-//        }
-//
-//        override fun getInfoWindow(marker: Marker): View? {
-//            rendowWindowText(marker, mWindow)
-//            return mWindow
-//        }
-//    }
+    private fun editarMarker(id: Int, title: String, description: String, image: String, carTrafficProblem: Int, solved: Int) {
+        Toast.makeText(applicationContext, id.toString(), Toast.LENGTH_SHORT).show()
+        val intent = Intent(this@Maps, AddMarker::class.java)
+        startActivityForResult(intent, editMarker)
+        intent.putExtra("ID", id)
+        intent.putExtra("TITLE", title)
+        intent.putExtra("DESCRIPTION", description)
+//      intent.putExtra("IMAGE", data.image)
+        intent.putExtra("CARTRAFFICPROBLEM", carTrafficProblem)
+        intent.putExtra("SOLVED", solved)
+//        intent.putExtra("ID", data.id)
+//        intent.putExtra("TITLE", data.title)
+//        intent.putExtra("DESCRIPTION", data.description)
+////                                intent.putExtra("IMAGE", data.image)
+//        intent.putExtra("CARTRAFFICPROBLEM", data.carTrafficProblem)
+//        intent.putExtra("SOLVED", data.solved)
+    }
 
     /**
      *  Vai buscar os pontos ao servidor
      */
     private fun getPointsWS() {
         //vai buscar o id para controlar a cor das marks por utilizador
-        val id =
-                getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE).getInt("id",
-                        0)
+        val id = sharedPreferences.getInt("id", 0)
 
         // adiciona pontos no mapa por webservices
         val request = ServiceBuilder.buildService(EndPoints::class.java)
@@ -196,18 +218,22 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
 
         call.enqueue(object : Callback<List<MapIncidences>> {
             override fun onResponse(call: Call<List<MapIncidences>>, response: Response<List<MapIncidences>>) {
+
                 mapIncidences = response.body()!!
                 for (map in mapIncidences) {
                     position = LatLng(map.latCoordinates, map.longCoordinates)
 
                     // verifica se são pins do utilizador logado
+
+
                     if (id == map.users_id) {
-                        mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
+                        marker = mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
                             .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
                     } else {
-                        mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
-                        )
+                        marker = mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description))
                     }
+
+                    markerIdMapping.put(marker, map.id)
                 }
             }
 
@@ -237,8 +263,23 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         })
     }
 
-    //teste development
-    //blabla
+    fun updatePointWS(id: Int, user_id: Int, title: String, description: String, image: String, carTrafficProblem: Int, solved: Int) {
+        val request = ServiceBuilder.buildService(EndPoints::class.java)
+        val call = request.updatePoint(id, user_id, title, description, image, carTrafficProblem, solved)
+
+        call.enqueue(object : Callback<MapIncidences> {
+            override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
+                Toast.makeText(this@Maps, getString(R.string.mark_was_deleted), Toast.LENGTH_SHORT)
+                    .show()
+                getPointsWS()
+            }
+
+            override fun onFailure(call: Call<MapIncidences>, t: Throwable) {
+                Toast.makeText(this@Maps, getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
     /**
      *  eliminar pontos por id
      */
@@ -272,10 +313,15 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             val carTrafficProblem = data?.getIntExtra(AddMarker.CARTRAFFICPROBLEM, 0)
             val solved = data?.getIntExtra(AddMarker.SOLVED, 0)
 
-            val user_id = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE).getInt("id", 0)
+            val user_id = sharedPreferences.getInt("id", 0)
 
-            addPointWS(user_id, lastLocation.latitude, lastLocation.longitude, title.toString(), description.toString(),
-                    "", carTrafficProblem!!, solved!!)
+            if (requestCode == createMarker) {
+                addPointWS(user_id, lastLocation.latitude, lastLocation.longitude, title.toString(), description.toString(),
+                        "", carTrafficProblem!!, solved!!)
+            } else if (requestCode == editMarker) {
+                Toast.makeText(this, "entrou aqui", Toast.LENGTH_SHORT).show()
+                updatePointWS(id!!, user_id, title.toString(), description.toString(), "", carTrafficProblem!!, solved!!)
+            }
 
         } else {
             Toast.makeText(applicationContext, getString(R.string.field_is_empty), Toast.LENGTH_SHORT).show()
@@ -302,10 +348,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             }
             R.id.logoutMenu -> {
                 //limpa o ficheiro do SP
-                val sharedPreferences: SharedPreferences = getSharedPreferences(
-                        getString(R.string.LoginData),
-                        Context.MODE_PRIVATE
-                )
                 sharedPreferences.edit().clear().apply()
 
                 val intent = Intent(this, Login::class.java)
@@ -327,6 +369,37 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         super.onResume()
         startLocationUpdates()
     }
+
+
+    /**
+     * Janelinha no mapa
+     */
+//    class CustomInfoWindowForGoogleMap(context: Context) : GoogleMap.InfoWindowAdapter {
+//        var mContext = context
+//        var mWindow = (context as Activity).layoutInflater.inflate(R.layout.custom_marker_window, null)
+//
+//        private fun rendowWindowText(marker: Marker, view: View) {
+//
+//            val tvTitle = view.findViewById<TextView>(R.id.cm_title)
+//            val tvDescription = view.findViewById<TextView>(R.id.cm_description)
+//            val bt_delete = view.findViewById<ImageButton>(R.id.cm_delete)
+//            val im_foto = view.findViewById<ImageView>(R.id.im_foto)
+//
+//            tvTitle.text = marker.title.toString()
+//            tvDescription.text = marker.snippet
+//
+//        }
+//
+//        override fun getInfoContents(marker: Marker): View {
+//            rendowWindowText(marker, mWindow)
+//            return mWindow
+//        }
+//
+//        override fun getInfoWindow(marker: Marker): View? {
+//            rendowWindowText(marker, mWindow)
+//            return mWindow
+//        }
+//    }
 
 
 }

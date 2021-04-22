@@ -59,14 +59,20 @@ class AddMarker : AppCompatActivity() {
                 replyIntent.putExtra(ID,  intent.getIntExtra("ID", 0))
                 replyIntent.putExtra(TITLE,  title)
                 replyIntent.putExtra(DESCRIPTION, description)
-                replyIntent.putExtra(DATE, Date().toString())
 //                replyIntent.putExtra(IMAGE,  title)
                 replyIntent.putExtra(CARTRAFFICPROBLEM, trafficProblem)
-//                replyIntent.putExtra(SOLVED, Date().toString())
+                replyIntent.putExtra(SOLVED, 0) //alterar
 
                 setResult(Activity.RESULT_OK, replyIntent)
             }
             finish()
+        }
+
+        //altera o texto
+        title.setText(intent.getStringExtra("TITLE"))
+        description.setText(intent.getStringExtra("DESCRIPTION"))
+        if (intent.getIntExtra("ID", 0) != 0) {
+            button.text = getString(R.string.edit_marker)
         }
     }
 
