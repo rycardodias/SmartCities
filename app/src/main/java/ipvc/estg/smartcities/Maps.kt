@@ -238,6 +238,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     }
 
     //teste development
+    //blabla
     /**
      *  eliminar pontos por id
      */
