@@ -34,7 +34,7 @@ Login : AppCompatActivity() {
         setContentView(R.layout.login)
 
         // inicialização do SP e verificação dos dados para login
-        if(getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE).getInt("id", 0)!= 0) {
+        if (getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE).getInt("id", 0) != 0) {
             correctLogin()
         }
 
@@ -96,8 +96,7 @@ Login : AppCompatActivity() {
                     val data = response.body()
 
                     if (data?.id != null) {
-                        val sharedPreferences: SharedPreferences =
-                        getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
+                        val sharedPreferences: SharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
                         with(sharedPreferences.edit()) {
                             putInt("id", data!!.id)
                             putString("name", data.name)

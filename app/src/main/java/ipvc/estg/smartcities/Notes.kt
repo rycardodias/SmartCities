@@ -34,13 +34,7 @@ class Notes : AppCompatActivity(), NotesAdapter.onItemClickListener {
         val adapter = NotesAdapter(this, this)
         recyclerview.adapter = adapter
         recyclerview.layoutManager = LinearLayoutManager(this)
-        recyclerview.addItemDecoration(
-            DividerItemDecoration(
-                recyclerview.context,
-                DividerItemDecoration.VERTICAL
-            )
-        )
-
+        recyclerview.addItemDecoration(DividerItemDecoration(recyclerview.context, DividerItemDecoration.VERTICAL))
 
         //view model
         notesViewModel = ViewModelProvider(this).get(NotesViewModel::class.java)
@@ -48,7 +42,7 @@ class Notes : AppCompatActivity(), NotesAdapter.onItemClickListener {
 
         //fab
         val fab = findViewById<FloatingActionButton>(R.id.fab)
-        fab.setOnClickListener{
+        fab.setOnClickListener {
             val intent = Intent(this@Notes, AddNotes::class.java)
             startActivityForResult(intent, addNotesRequest)
         }
@@ -62,20 +56,16 @@ class Notes : AppCompatActivity(), NotesAdapter.onItemClickListener {
             val description = data?.getStringExtra(AddNotes.DESCRIPTION)
             val date = data?.getStringExtra(AddNotes.DATE)
 
-            if (requestCode== addNotesRequest) {
+            if (requestCode == addNotesRequest) {
                 val notes = Notes(title = title, description = description, date = date)
                 notesViewModel.insert(notes)
 
-            } else if (requestCode== editNotesRequest) {
+            } else if (requestCode == editNotesRequest) {
                 val notes = Notes(id = id, title = title, description = description, date = date)
                 notesViewModel.update(notes)
             }
         } else {
-            Toast.makeText(
-                applicationContext,
-                getString(R.string.field_is_empty),
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(applicationContext, getString(R.string.field_is_empty), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -97,7 +87,7 @@ class Notes : AppCompatActivity(), NotesAdapter.onItemClickListener {
         val inflater: MenuInflater = menuInflater
         inflater.inflate(R.menu.menu, menu)
         val sharedPreferences: SharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
-        if (sharedPreferences.getInt("id",0) == 0) {
+        if (sharedPreferences.getInt("id", 0) == 0) {
             menu!!.findItem(R.id.loginMenu).setVisible(true)
         } else {
             menu!!.findItem(R.id.mapMenu).setVisible(true)

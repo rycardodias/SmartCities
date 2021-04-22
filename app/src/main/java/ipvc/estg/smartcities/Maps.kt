@@ -30,6 +30,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import ipvc.estg.smartcities.adapter.NotesAdapter
 import ipvc.estg.smartcities.api.EndPoints
 import ipvc.estg.smartcities.api.MapIncidences
@@ -72,6 +73,13 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         //pede a localização
         createLocationRequest()
         getPointsWS()
+
+        //fab
+        val fab = findViewById<FloatingActionButton>(R.id.fab)
+        fab.setOnClickListener {
+            val intent = Intent(this@Maps, AddMarker::class.java)
+            startActivityForResult(intent, 1)
+        }
     }
 
     private fun createLocationRequest() {
@@ -156,7 +164,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             val bt_delete = view.findViewById<ImageButton>(R.id.cm_delete)
             val im_foto = view.findViewById<ImageView>(R.id.im_foto)
 
-            tvTitle.text = marker.title
+            tvTitle.text = marker.title.toString()
             tvDescription.text = marker.snippet
 
         }
@@ -279,7 +287,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         val inflater: MenuInflater = menuInflater
         inflater.inflate(R.menu.menu, menu)
         menu!!.findItem(R.id.notesMenu).isVisible = true
-        menu.findItem(R.id.addMarker).isVisible = true
         menu.findItem(R.id.logoutMenu).isVisible = true
         return super.onCreateOptionsMenu(menu)
     }
@@ -289,11 +296,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             R.id.notesMenu -> {
                 val intent = Intent(this, Notes::class.java)
                 startActivity(intent)
-                true
-            }
-            R.id.addMarker -> {
-                val intent = Intent(this@Maps, AddMarker::class.java)
-                startActivityForResult(intent, 1)
                 true
             }
             R.id.logoutMenu -> {

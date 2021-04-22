@@ -26,10 +26,10 @@ abstract class NotesDB : RoomDatabase() {
 
 //                    notesDao.deleteAll()
 //
-//                    var notes = Notes(1, "Reunião PGM", "Reuniao de mobile as 16h", Date().toString())
-//                    notesDao.insert(notes)
-//                    notes = Notes(2, "Relatorio Projeto", "Enviar relatório dia 26/03", Date().toString())
-//                    notesDao.insert(notes)
+                    var notes = Notes(1, "Reunião PGM", "Reuniao de mobile as 16h", Date().toString())
+                    notesDao.insert(notes)
+                    notes = Notes(2, "Relatorio Projeto", "Enviar relatório dia 26/03", Date().toString())
+                    notesDao.insert(notes)
                 }
             }
         }
