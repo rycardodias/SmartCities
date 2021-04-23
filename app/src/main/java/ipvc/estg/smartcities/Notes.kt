@@ -106,6 +106,7 @@ class Notes : AppCompatActivity(), NotesAdapter.onItemClickListener {
             R.id.mapMenu -> {
                 val intent = Intent(this, Maps::class.java)
                 startActivity(intent)
+                finish()
                 true
             }
             else -> super.onOptionsItemSelected(item)

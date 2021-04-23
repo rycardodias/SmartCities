@@ -30,7 +30,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import ipvc.estg.smartcities.api.EndPoints
 import ipvc.estg.smartcities.api.MapIncidences
 import ipvc.estg.smartcities.api.ServiceBuilder
-import ipvc.estg.smartcities.api.User
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -55,10 +54,10 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
 
     private var createMarker = 1
     private var editMarker = 2
+    var userDriving = 0
 
     private lateinit var sharedPreferences: SharedPreferences
 
-    var userDriving = 0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
@@ -82,7 +81,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         }
         //pede a localização
         createLocationRequest()
-        getPointsWS(userDriving)
 
         //fab
         val fab = findViewById<FloatingActionButton>(R.id.fab)
@@ -109,8 +107,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
 
     // Adiciona a localização
     private fun getLocation() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        ) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             //coloca a bolinha na localização
             mMap.isMyLocationEnabled = true
 
@@ -147,6 +144,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         getLocation()
+        getPointsWS(userDriving)
 
         googleMap.setOnInfoWindowLongClickListener {
             val request = ServiceBuilder.buildService(EndPoints::class.java)
@@ -158,17 +156,12 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                         val data = response.body()
 
                         if (data?.users_id == sharedPreferences.getInt("id", 0)) {
-
-                            val alertDialogBuilder = AlertDialog.Builder(this@Maps)
-                                .setTitle(getString(R.string.do_you_want_to_modify_marker))
-
+                            val alertDialogBuilder = AlertDialog.Builder(this@Maps).setTitle(getString(R.string.do_you_want_to_modify_marker))
                             alertDialogBuilder.setNeutralButton(R.string.edit) { dialog, which ->
                                 editarMarker(data.id, data.title, data.description, "", data.carTrafficProblem)
-
                             }
                             alertDialogBuilder.setNegativeButton("Delete") { dialog, which ->
                                 deletePointWS(data.id)
-
                             }
                             alertDialogBuilder.show()
                         }
@@ -180,16 +173,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 }
             })
         }
-    }
-
-    private fun editarMarker(id: Int, title: String, description: String, image: String, carTrafficProblem: Int) {
-        val intent = Intent(this@Maps, AddMarker::class.java)
-        intent.putExtra("ID", id)
-        intent.putExtra("TITLE", title)
-        intent.putExtra("DESCRIPTION", description)
-//      intent.putExtra("IMAGE", data.image)
-        intent.putExtra("CARTRAFFICPROBLEM", carTrafficProblem)
-        startActivityForResult(intent, editMarker)
     }
 
     /**
@@ -208,8 +191,12 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             override fun onResponse(call: Call<List<MapIncidences>>, response: Response<List<MapIncidences>>) {
                 mMap.clear()
                 mapIncidences = response.body()!!
+
                 for (map in mapIncidences) {
                     position = LatLng(map.latCoordinates, map.longCoordinates)
+                    //verifica que tipo de vista tem driving ou nao
+
+
 
                     if (map.carTrafficProblem == driving) {
                         // verifica se são pins do utilizador logado
@@ -219,7 +206,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                         } else {
                             marker = mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description))
                         }
-
                         markerIdMapping.put(marker, map.id)
                     }
                 }
@@ -276,8 +262,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
 
         call.enqueue(object : Callback<MapIncidences> {
             override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
-                Toast.makeText(this@Maps, getString(R.string.mark_was_deleted), Toast.LENGTH_SHORT)
-                    .show()
+                Toast.makeText(this@Maps, getString(R.string.mark_was_deleted), Toast.LENGTH_SHORT).show()
                 getPointsWS(userDriving)
             }
 
@@ -285,6 +270,19 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 Toast.makeText(this@Maps, getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show()
             }
         })
+    }
+
+    /**
+     * cria o intent com os valores para adicionar markers
+     */
+    private fun editarMarker(id: Int, title: String, description: String, image: String, carTrafficProblem: Int) {
+        val intent = Intent(this@Maps, AddMarker::class.java)
+        intent.putExtra("ID", id)
+        intent.putExtra("TITLE", title)
+        intent.putExtra("DESCRIPTION", description)
+//      intent.putExtra("IMAGE", data.image)
+        intent.putExtra("CARTRAFFICPROBLEM", carTrafficProblem)
+        startActivityForResult(intent, editMarker)
     }
 
     /**
@@ -302,6 +300,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             val user_id = sharedPreferences.getInt("id", 0)
 
             if (requestCode == createMarker) {
+
                 addPointWS(user_id, lastLocation.latitude, lastLocation.longitude, title.toString(), description.toString(),
                         "", carTrafficProblem!!)
             } else if (requestCode == editMarker) {
@@ -330,6 +329,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             R.id.notesMenu -> {
                 val intent = Intent(this, Notes::class.java)
                 startActivity(intent)
+                finish()
                 true
             }
             R.id.logoutMenu -> {
@@ -342,12 +342,12 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 true
             }
             R.id.drivingMenu -> {
-                if(item.isChecked()){
+                if (item.isChecked()) {
                     // If item already checked then unchecked it
                     item.setChecked(false);
                     userDriving = 0
 //                    mBold = false;
-                }else{
+                } else {
                     // If item is unchecked then checked it
                     item.setChecked(true);
                     userDriving = 1
