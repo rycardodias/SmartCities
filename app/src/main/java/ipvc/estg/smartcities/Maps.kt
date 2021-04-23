@@ -192,11 +192,10 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 mMap.clear()
                 mapIncidences = response.body()!!
 
+                //teste
                 for (map in mapIncidences) {
                     position = LatLng(map.latCoordinates, map.longCoordinates)
                     //verifica que tipo de vista tem driving ou nao
-
-
 
                     if (map.carTrafficProblem == driving) {
                         // verifica se são pins do utilizador logado
