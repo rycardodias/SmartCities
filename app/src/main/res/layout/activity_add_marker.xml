@@ -48,7 +48,6 @@
         android:inputType="textAutoComplete"
         android:textSize="18sp" />
 
-
     <CheckBox
         android:id="@+id/cb_trafficProblem"
         android:layout_width="match_parent"

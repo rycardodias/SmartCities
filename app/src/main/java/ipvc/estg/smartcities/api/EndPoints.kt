@@ -9,9 +9,6 @@ interface EndPoints {
     @GET("users")
     fun getUsers(): Call<List<User>> //é usado o List porque a resposta vem num array
 
-//    @GET("users/login/{email}/{password}")
-//    fun getUserLogin(@Path("email") email: String, @Path("password") password: String): Call<User>
-
     @FormUrlEncoded
     @POST("users/login")
     fun postLogin(@Field("email") email: String, @Field("password") password: String): Call<User>
@@ -19,6 +16,9 @@ interface EndPoints {
     // MAP ENDPOINTS
     @GET("map")
     fun getMapPoints(): Call<List<MapIncidences>>
+
+    @GET("map/id/{id}")
+    fun getMapPointsById(@Path("id") id: Int): Call<MapIncidences>
 
     @GET("map/carTrafficProblem/{id}")
     fun getMapPointsTrafficProblem(@Path("id") id: Int): Call<List<MapIncidences>>
@@ -33,6 +33,16 @@ interface EndPoints {
                  @Field("image") image: String,
                  @Field("carTrafficProblem") carTrafficProblem: Int,
                  @Field("solved") solved: Int
+    ): Call<MapIncidences>
+
+    @FormUrlEncoded
+    @PUT("map/update")
+    fun updatePoint(@Field("id") id: Int,
+            @Field("title") title: String,
+            @Field("description") description: String,
+            @Field("image") image: String,
+            @Field("carTrafficProblem") carTrafficProblem: Int,
+            @Field("solved") solved: Int
     ): Call<MapIncidences>
 
     @DELETE("map/delete/{id}")
