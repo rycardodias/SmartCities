@@ -70,7 +70,6 @@ class Notes : AppCompatActivity(), NotesAdapter.onItemClickListener {
     }
 
     override fun onEditClick(id: Int, title: String, description: String) {
-        Toast.makeText(this, getString(R.string.field_is_empty), Toast.LENGTH_SHORT).show()
         val intent = Intent(this@Notes, AddNotes::class.java)
         intent.putExtra("ID", id)
         intent.putExtra("TITLE", title)
