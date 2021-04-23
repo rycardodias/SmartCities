@@ -25,4 +25,5 @@
     <string name="add">Add</string>
     <string name="do_you_want_to_modify_marker">Do you want to modify marker?</string>
     <string name="edit_marker">Edit marker</string>
+    <string name="mark_was_updated">Marker was updated</string>
 </resources>

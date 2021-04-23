@@ -165,16 +165,14 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                                 .setTitle(getString(R.string.do_you_want_to_modify_marker))
 
                             alertDialogBuilder.setNeutralButton(R.string.edit) { dialog, which ->
-                                editarMarker(data.id,data.title, data.description, "", data.carTrafficProblem, data.solved)
+                                editarMarker(data.id, data.users_id, data.title, data.description, "", data.carTrafficProblem, data.solved)
 
                             }
                             alertDialogBuilder.setNegativeButton("Delete") { dialog, which ->
                                 deletePointWS(data.id)
-                                mMap.clear()
+
                             }
                             alertDialogBuilder.show()
-
-
                         }
                     }
                 }
@@ -186,22 +184,16 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    private fun editarMarker(id: Int, title: String, description: String, image: String, carTrafficProblem: Int, solved: Int) {
-        Toast.makeText(applicationContext, id.toString(), Toast.LENGTH_SHORT).show()
+    private fun editarMarker(id: Int, user_id: Int, title: String, description: String, image: String, carTrafficProblem: Int, solved: Int) {
         val intent = Intent(this@Maps, AddMarker::class.java)
-        startActivityForResult(intent, editMarker)
         intent.putExtra("ID", id)
+        intent.putExtra("USERS_ID", user_id)
         intent.putExtra("TITLE", title)
         intent.putExtra("DESCRIPTION", description)
 //      intent.putExtra("IMAGE", data.image)
         intent.putExtra("CARTRAFFICPROBLEM", carTrafficProblem)
         intent.putExtra("SOLVED", solved)
-//        intent.putExtra("ID", data.id)
-//        intent.putExtra("TITLE", data.title)
-//        intent.putExtra("DESCRIPTION", data.description)
-////                                intent.putExtra("IMAGE", data.image)
-//        intent.putExtra("CARTRAFFICPROBLEM", data.carTrafficProblem)
-//        intent.putExtra("SOLVED", data.solved)
+        startActivityForResult(intent, editMarker)
     }
 
     /**
@@ -222,10 +214,8 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 mapIncidences = response.body()!!
                 for (map in mapIncidences) {
                     position = LatLng(map.latCoordinates, map.longCoordinates)
-
+                    mMap.clear()
                     // verifica se são pins do utilizador logado
-
-
                     if (id == map.users_id) {
                         marker = mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
                             .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
@@ -263,14 +253,15 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         })
     }
 
-    fun updatePointWS(id: Int, user_id: Int, title: String, description: String, image: String, carTrafficProblem: Int, solved: Int) {
+    fun updatePointWS(id: Int, title: String, description: String, image: String, carTrafficProblem: Int, solved: Int) {
         val request = ServiceBuilder.buildService(EndPoints::class.java)
-        val call = request.updatePoint(id, user_id, title, description, image, carTrafficProblem, solved)
+        val call = request.updatePoint(id, title, description, image, carTrafficProblem, solved)
 
         call.enqueue(object : Callback<MapIncidences> {
             override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
-                Toast.makeText(this@Maps, getString(R.string.mark_was_deleted), Toast.LENGTH_SHORT)
-                    .show()
+                val body = response.body()
+//                Toast.makeText(this@Maps, body?.id!!, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@Maps, getString(R.string.mark_was_updated), Toast.LENGTH_SHORT).show()
                 getPointsWS()
             }
 
@@ -319,8 +310,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 addPointWS(user_id, lastLocation.latitude, lastLocation.longitude, title.toString(), description.toString(),
                         "", carTrafficProblem!!, solved!!)
             } else if (requestCode == editMarker) {
-                Toast.makeText(this, "entrou aqui", Toast.LENGTH_SHORT).show()
-                updatePointWS(id!!, user_id, title.toString(), description.toString(), "", carTrafficProblem!!, solved!!)
+                updatePointWS(id!!, title.toString(), description.toString(), "", carTrafficProblem!!, solved!!)
             }
 
         } else {

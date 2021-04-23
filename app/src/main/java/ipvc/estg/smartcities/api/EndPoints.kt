@@ -36,9 +36,8 @@ interface EndPoints {
     ): Call<MapIncidences>
 
     @FormUrlEncoded
-    @PUT("map/update'")
+    @PUT("map/update")
     fun updatePoint(@Field("id") id: Int,
-            @Field("users_id") users_id: Int,
             @Field("title") title: String,
             @Field("description") description: String,
             @Field("image") image: String,
