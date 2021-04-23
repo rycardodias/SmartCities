@@ -2,6 +2,7 @@ package ipvc.estg.smartcities
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -9,14 +10,9 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
 import android.os.Looper
-import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
-import android.view.View
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -31,13 +27,13 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import ipvc.estg.smartcities.adapter.NotesAdapter
 import ipvc.estg.smartcities.api.EndPoints
 import ipvc.estg.smartcities.api.MapIncidences
 import ipvc.estg.smartcities.api.ServiceBuilder
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+
 
 class Maps : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mapIncidences: List<MapIncidences>
@@ -52,12 +48,25 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequest: LocationRequest
 
+    //guarda id dos marcadores
+    val markerIdMapping: HashMap<Marker, Int> = HashMap()
+    lateinit var marker: Marker
+
+    private var createMarker = 1
+    private var editMarker = 2
+    var userDriving = 0
+
+    private lateinit var sharedPreferences: SharedPreferences
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
+
         mapFragment.getMapAsync(this)
+
+        sharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
 
         //iniciar biblioteca localizacao
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
@@ -72,13 +81,12 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         }
         //pede a localização
         createLocationRequest()
-        getPointsWS()
 
         //fab
         val fab = findViewById<FloatingActionButton>(R.id.fab)
         fab.setOnClickListener {
             val intent = Intent(this@Maps, AddMarker::class.java)
-            startActivityForResult(intent, 1)
+            startActivityForResult(intent, createMarker)
         }
     }
 
@@ -99,8 +107,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
 
     // Adiciona a localização
     private fun getLocation() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        ) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             //coloca a bolinha na localização
             mMap.isMyLocationEnabled = true
 
@@ -137,16 +144,231 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         getLocation()
-//        mMap.setInfoWindowAdapter(CustomInfoWindowForGoogleMap(this))
-//        mMap.setOnInfoWindowClickListener {
-//            Toast.makeText(this, "teste", Toast.LENGTH_SHORT).show()
-//        }
-//        mMap.setOnMapLongClickListener() {
-//            val user_id = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE).getInt("id", 0)
-//            addPointWS(user_id,it.latitude, it.longitude, "teste", "description", "", 1, 0)
-//        }
+        getPointsWS(userDriving)
+
+        googleMap.setOnInfoWindowLongClickListener {
+            val request = ServiceBuilder.buildService(EndPoints::class.java)
+            val call = request.getMapPointsById(markerIdMapping.get(it)!!)
+
+            call.enqueue(object : Callback<MapIncidences> {
+                override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
+                    if (response.isSuccessful) {
+                        val data = response.body()
+
+                        if (data?.users_id == sharedPreferences.getInt("id", 0)) {
+                            val alertDialogBuilder = AlertDialog.Builder(this@Maps).setTitle(getString(R.string.do_you_want_to_modify_marker))
+                            alertDialogBuilder.setNeutralButton(R.string.edit) { dialog, which ->
+                                editarMarker(data.id, data.title, data.description, "", data.carTrafficProblem)
+                            }
+                            alertDialogBuilder.setNegativeButton("Delete") { dialog, which ->
+                                deletePointWS(data.id)
+                            }
+                            alertDialogBuilder.show()
+                        }
+                    }
+                }
+
+                override fun onFailure(call: Call<MapIncidences>, t: Throwable) {
+                    Toast.makeText(this@Maps, "${t.message}", Toast.LENGTH_SHORT).show()
+                }
+            })
+        }
+    }
+
+    /**
+     *  Vai buscar os pontos ao servidor
+     */
+    private fun getPointsWS(driving: Int) {
+        //vai buscar o id para controlar a cor das marks por utilizador
+        val id = sharedPreferences.getInt("id", 0)
+
+        // adiciona pontos no mapa por webservices
+        val request = ServiceBuilder.buildService(EndPoints::class.java)
+        val call = request.getMapPoints()
+        var position: LatLng
+
+        call.enqueue(object : Callback<List<MapIncidences>> {
+            override fun onResponse(call: Call<List<MapIncidences>>, response: Response<List<MapIncidences>>) {
+                mMap.clear()
+                mapIncidences = response.body()!!
+
+                for (map in mapIncidences) {
+                    position = LatLng(map.latCoordinates, map.longCoordinates)
+                    //verifica que tipo de vista tem driving ou nao
 
 
+
+                    if (map.carTrafficProblem == driving) {
+                        // verifica se são pins do utilizador logado
+                        if (id == map.users_id) {
+                            marker = mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
+                        } else {
+                            marker = mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description))
+                        }
+                        markerIdMapping.put(marker, map.id)
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<List<MapIncidences>>, t: Throwable) {
+                Toast.makeText(this@Maps, "${t.message}", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    /**
+     * adiciona mark no servidor
+     */
+    fun addPointWS(user_id: Int, latCoordinates: Double, longCoordinates: Double, title: String,
+            description: String, image: String, carTrafficProblem: Int) {
+        val request = ServiceBuilder.buildService(EndPoints::class.java)
+        val call = request.addPoint(user_id, latCoordinates, longCoordinates, title, description, image, carTrafficProblem, 0)
+
+        call.enqueue(object : Callback<MapIncidences> {
+            override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
+                Toast.makeText(this@Maps, getString(R.string.new_incidence), Toast.LENGTH_SHORT).show()
+                getPointsWS(userDriving)
+            }
+
+            override fun onFailure(call: Call<MapIncidences>, t: Throwable) {
+                Toast.makeText(this@Maps, getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    fun updatePointWS(id: Int, title: String, description: String, image: String, carTrafficProblem: Int) {
+        val request = ServiceBuilder.buildService(EndPoints::class.java)
+        val call = request.updatePoint(id, title, description, image, carTrafficProblem, 0)
+
+        call.enqueue(object : Callback<MapIncidences> {
+            override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
+                Toast.makeText(this@Maps, getString(R.string.mark_was_updated), Toast.LENGTH_SHORT).show()
+                getPointsWS(userDriving)
+            }
+
+            override fun onFailure(call: Call<MapIncidences>, t: Throwable) {
+                Toast.makeText(this@Maps, getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    /**
+     *  eliminar pontos por id
+     */
+    fun deletePointWS(id: Int) {
+        val request = ServiceBuilder.buildService(EndPoints::class.java)
+        val call = request.deletePoint(id)
+
+        call.enqueue(object : Callback<MapIncidences> {
+            override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
+                Toast.makeText(this@Maps, getString(R.string.mark_was_deleted), Toast.LENGTH_SHORT).show()
+                getPointsWS(userDriving)
+            }
+
+            override fun onFailure(call: Call<MapIncidences>, t: Throwable) {
+                Toast.makeText(this@Maps, getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    /**
+     * cria o intent com os valores para adicionar markers
+     */
+    private fun editarMarker(id: Int, title: String, description: String, image: String, carTrafficProblem: Int) {
+        val intent = Intent(this@Maps, AddMarker::class.java)
+        intent.putExtra("ID", id)
+        intent.putExtra("TITLE", title)
+        intent.putExtra("DESCRIPTION", description)
+//      intent.putExtra("IMAGE", data.image)
+        intent.putExtra("CARTRAFFICPROBLEM", carTrafficProblem)
+        startActivityForResult(intent, editMarker)
+    }
+
+    /**
+     * Recebe os parametros passados no AddMarker
+     */
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode == Activity.RESULT_OK) {
+            val id = data?.getIntExtra(AddMarker.ID, 0)
+            val title = data?.getStringExtra(AddMarker.TITLE)
+            val description = data?.getStringExtra(AddMarker.DESCRIPTION)
+//            val image = data?.getIntExtra(AddMarker.IMAGE, 0)
+            val carTrafficProblem = data?.getIntExtra(AddMarker.CARTRAFFICPROBLEM, 0)
+
+            val user_id = sharedPreferences.getInt("id", 0)
+
+            if (requestCode == createMarker) {
+
+                addPointWS(user_id, lastLocation.latitude, lastLocation.longitude, title.toString(), description.toString(),
+                        "", carTrafficProblem!!)
+            } else if (requestCode == editMarker) {
+                updatePointWS(id!!, title.toString(), description.toString(), "", carTrafficProblem!!)
+            }
+
+        } else {
+            Toast.makeText(applicationContext, getString(R.string.any_field_was_changed), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     *MENU DE OPCOES
+     **/
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        val inflater: MenuInflater = menuInflater
+        inflater.inflate(R.menu.menu, menu)
+        menu!!.findItem(R.id.notesMenu).isVisible = true
+        menu.findItem(R.id.logoutMenu).isVisible = true
+        menu.findItem(R.id.drivingMenu).isVisible = true
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.notesMenu -> {
+                val intent = Intent(this, Notes::class.java)
+                startActivity(intent)
+                finish()
+                true
+            }
+            R.id.logoutMenu -> {
+                //limpa o ficheiro do SP
+                sharedPreferences.edit().clear().apply()
+
+                val intent = Intent(this, Login::class.java)
+                startActivity(intent)
+                finish()
+                true
+            }
+            R.id.drivingMenu -> {
+                if (item.isChecked()) {
+                    // If item already checked then unchecked it
+                    item.setChecked(false);
+                    userDriving = 0
+//                    mBold = false;
+                } else {
+                    // If item is unchecked then checked it
+                    item.setChecked(true);
+                    userDriving = 1
+                }
+                getPointsWS(userDriving)
+                Toast.makeText(this, "entra", Toast.LENGTH_SHORT).show()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+
+    override fun onPause() {
+        super.onPause()
+        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        startLocationUpdates()
     }
 
 
@@ -179,152 +401,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
 //            return mWindow
 //        }
 //    }
-
-    /**
-     *  Vai buscar os pontos ao servidor
-     */
-    private fun getPointsWS() {
-        //vai buscar o id para controlar a cor das marks por utilizador
-        val id =
-                getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE).getInt("id",
-                        0)
-
-        // adiciona pontos no mapa por webservices
-        val request = ServiceBuilder.buildService(EndPoints::class.java)
-        val call = request.getMapPoints()
-        var position: LatLng
-
-        call.enqueue(object : Callback<List<MapIncidences>> {
-            override fun onResponse(call: Call<List<MapIncidences>>, response: Response<List<MapIncidences>>) {
-                mapIncidences = response.body()!!
-                for (map in mapIncidences) {
-                    position = LatLng(map.latCoordinates, map.longCoordinates)
-
-                    // verifica se são pins do utilizador logado
-                    if (id == map.users_id) {
-                        mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
-                    } else {
-                        mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
-                        )
-                    }
-                }
-            }
-
-            override fun onFailure(call: Call<List<MapIncidences>>, t: Throwable) {
-                Toast.makeText(this@Maps, "${t.message}", Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    /**
-     * adiciona mark no servidor
-     */
-    fun addPointWS(user_id: Int, latCoordinates: Double, longCoordinates: Double, title: String,
-            description: String, image: String, carTrafficProblem: Int, solved: Int) {
-        val request = ServiceBuilder.buildService(EndPoints::class.java)
-        val call = request.addPoint(user_id, latCoordinates, longCoordinates, title, description, image, carTrafficProblem, solved)
-
-        call.enqueue(object : Callback<MapIncidences> {
-            override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
-                Toast.makeText(this@Maps, getString(R.string.new_incidence), Toast.LENGTH_SHORT).show()
-                getPointsWS()
-            }
-
-            override fun onFailure(call: Call<MapIncidences>, t: Throwable) {
-                Toast.makeText(this@Maps, getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    /**
-     *  eliminar pontos por id
-     */
-    fun deletePointWS(id: Int) {
-        val request = ServiceBuilder.buildService(EndPoints::class.java)
-        val call = request.deletePoint(id)
-
-        call.enqueue(object : Callback<MapIncidences> {
-            override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
-                Toast.makeText(this@Maps, getString(R.string.mark_was_deleted), Toast.LENGTH_SHORT)
-                    .show()
-                getPointsWS()
-            }
-
-            override fun onFailure(call: Call<MapIncidences>, t: Throwable) {
-                Toast.makeText(this@Maps, getString(R.string.something_went_wrong), Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    /**
-     * Recebe os parametros passados no AddMarker
-     */
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == Activity.RESULT_OK) {
-            val id = data?.getIntExtra(AddMarker.ID, 0)
-            val title = data?.getStringExtra(AddMarker.TITLE)
-            val description = data?.getStringExtra(AddMarker.DESCRIPTION)
-//            val image = data?.getIntExtra(AddMarker.IMAGE, 0)
-            val carTrafficProblem = data?.getIntExtra(AddMarker.CARTRAFFICPROBLEM, 0)
-            val solved = data?.getIntExtra(AddMarker.SOLVED, 0)
-
-            val user_id = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE).getInt("id", 0)
-
-            addPointWS(user_id, lastLocation.latitude, lastLocation.longitude, title.toString(), description.toString(),
-                    "", carTrafficProblem!!, solved!!)
-
-        } else {
-            Toast.makeText(applicationContext, getString(R.string.field_is_empty), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /**
-     *MENU DE OPCOES
-     **/
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        val inflater: MenuInflater = menuInflater
-        inflater.inflate(R.menu.menu, menu)
-        menu!!.findItem(R.id.notesMenu).isVisible = true
-        menu.findItem(R.id.logoutMenu).isVisible = true
-        return super.onCreateOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.notesMenu -> {
-                val intent = Intent(this, Notes::class.java)
-                startActivity(intent)
-                true
-            }
-            R.id.logoutMenu -> {
-                //limpa o ficheiro do SP
-                val sharedPreferences: SharedPreferences = getSharedPreferences(
-                        getString(R.string.LoginData),
-                        Context.MODE_PRIVATE
-                )
-                sharedPreferences.edit().clear().apply()
-
-                val intent = Intent(this, Login::class.java)
-                startActivity(intent)
-                finish()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
-
-
-    override fun onPause() {
-        super.onPause()
-        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        startLocationUpdates()
-    }
 
 
 }

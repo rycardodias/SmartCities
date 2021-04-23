@@ -14,6 +14,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.Toast
+import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import java.util.*
 
@@ -23,7 +24,6 @@ class AddMarker : AppCompatActivity() {
     private lateinit var button: Button
     private lateinit var image: EditText
     private lateinit var carTrafficProblem: CheckBox
-    private lateinit var solved: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,12 +33,12 @@ class AddMarker : AppCompatActivity() {
         description = findViewById(R.id.et_description)
 //        image =
         carTrafficProblem = findViewById(R.id.cb_trafficProblem)
-
         title.addTextChangedListener(textWatcher)
         description.addTextChangedListener(textWatcher)
 
         var trafficProblem: Int = 0
         carTrafficProblem.setOnClickListener(View.OnClickListener {
+
             if (carTrafficProblem.isChecked) {
                 trafficProblem = 1
                 Toast.makeText(this, trafficProblem.toString(), Toast.LENGTH_SHORT).show()
@@ -57,27 +57,50 @@ class AddMarker : AppCompatActivity() {
                 val title = title.text.toString()
                 val description = description.text.toString()
                 replyIntent.putExtra(ID,  intent.getIntExtra("ID", 0))
-                replyIntent.putExtra(TITLE,  title)
-                replyIntent.putExtra(DESCRIPTION, description)
-                replyIntent.putExtra(DATE, Date().toString())
-//                replyIntent.putExtra(IMAGE,  title)
-                replyIntent.putExtra(CARTRAFFICPROBLEM, trafficProblem)
-//                replyIntent.putExtra(SOLVED, Date().toString())
 
-                setResult(Activity.RESULT_OK, replyIntent)
+                // verifica se os campos foram alterados
+                if (title== intent.getStringExtra("TITLE") &&
+                    description == intent.getStringExtra("DESCRIPTION") &&
+                    trafficProblem == intent.getIntExtra("CARTRAFFICPROBLEM", 0)) {
+                    setResult(Activity.RESULT_CANCELED, replyIntent)
+                } else {
+                    replyIntent.putExtra(TITLE,  title)
+                    replyIntent.putExtra(DESCRIPTION, description)
+//                  replyIntent.putExtra(IMAGE,  image)
+                    replyIntent.putExtra(CARTRAFFICPROBLEM, trafficProblem)
+                    setResult(Activity.RESULT_OK, replyIntent)
+                }
+
             }
             finish()
         }
+
+        /**
+         * mudança dos parametros no update
+         */
+        title.setText(intent.getStringExtra("TITLE"))
+        description.setText(intent.getStringExtra("DESCRIPTION"))
+
+        if (intent.getIntExtra("CARTRAFFICPROBLEM", 0) == 0) {
+            carTrafficProblem.setChecked(false);
+        } else {
+            carTrafficProblem.setChecked(true);
+        }
+
+        Toast.makeText(this, intent.getIntExtra("CARTRAFFICPROBLEM", 0).toString()+ 'a', Toast.LENGTH_SHORT).show()
+//        trafficProblem= )
+        if (intent.getIntExtra("ID", 0) != 0) {
+            button.text = getString(R.string.edit_marker)
+        }
+
     }
 
     companion object {
         const val ID = "com.example.android.id"
         const val TITLE = "com.example.android.title"
         const val DESCRIPTION = "com.example.android.country"
-        const val DATE = "com.example.android.date"
         const val IMAGE = "com.example.android.image"
         const val CARTRAFFICPROBLEM = "com.example.android.cartrafficproblem"
-        const val SOLVED = "com.example.android.solved"
     }
 
     private val textWatcher = object : TextWatcher {
