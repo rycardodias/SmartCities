@@ -1,6 +1,7 @@
 package ipvc.estg.smartcities
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
@@ -8,8 +9,10 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.Location
+import android.location.LocationManager
 import android.os.Bundle
 import android.os.Looper
+import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -27,12 +30,15 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.maps.android.SphericalUtil
 import ipvc.estg.smartcities.api.EndPoints
 import ipvc.estg.smartcities.api.MapIncidences
 import ipvc.estg.smartcities.api.ServiceBuilder
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.util.*
+import kotlin.collections.HashMap
 
 
 class Maps : AppCompatActivity(), OnMapReadyCallback {
@@ -55,6 +61,8 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     private var createMarker = 1
     private var editMarker = 2
     var userDriving = 0
+    var callPoints = false
+
 
     private lateinit var sharedPreferences: SharedPreferences
 
@@ -63,24 +71,52 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         setContentView(R.layout.activity_maps)
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
-
         mapFragment.getMapAsync(this)
 
         sharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
+
+//        /**
+//         * localização martelada
+//         */
+//        var targetlocation = Location(LocationManager.GPS_PROVIDER)
+//        targetlocation.latitude = 0.0
+//        targetlocation.longitude = 0.0
+//        lastLocation = targetlocation
 
         //iniciar biblioteca localizacao
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 
         locationCallback = object : LocationCallback() {
-            override fun onLocationResult(p0: LocationResult) {
-                super.onLocationResult(p0)
-                lastLocation = p0.lastLocation
-                val loc = LatLng(lastLocation.latitude, lastLocation.longitude)
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 15.0f))
+            override fun onLocationResult(locationResult: LocationResult?) {
+                locationResult ?: return
+                for (location in locationResult.locations) {
+                    Log.d("###LOG", "locationCallback")
+
+                    //necessário para nao crashar se lastLocation==null
+                    if (!callPoints) {
+                        getPointsWS(userDriving)
+                        callPoints = true
+                    }
+
+                    lastLocation = location
+                    val loc = LatLng(lastLocation.latitude, lastLocation.longitude)
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 12.0f))
+                }
             }
         }
+
+//        locationCallback = object : LocationCallback() {
+//            override fun onLocationResult(p0: LocationResult) {
+//                super.onLocationResult(p0)
+//                lastLocation = p0.lastLocation
+//                val loc = LatLng(lastLocation.latitude, lastLocation.longitude)
+//                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 12.0f))
+//            }
+//        }
+
         //pede a localização
         createLocationRequest()
+
 
         //fab
         val fab = findViewById<FloatingActionButton>(R.id.fab)
@@ -102,11 +138,12 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return
         }
+        Log.d("###LOG", "startLocationUpdates")
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
     }
 
     // Adiciona a localização
-    private fun getLocation() {
+    private fun getLastLocation() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             //coloca a bolinha na localização
             mMap.isMyLocationEnabled = true
@@ -115,9 +152,10 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 if (location != null) {
                     lastLocation = location
                     val currentLatLng = LatLng(location.latitude, location.longitude)
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15.0f))
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12.0f))
                 }
             }
+
         } else {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST)
             return
@@ -142,9 +180,10 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
+        Log.d("###LOG", "ONMAP")
         mMap = googleMap
-        getLocation()
-        getPointsWS(userDriving)
+        getLastLocation()
+//        getPointsWS(userDriving)
 
         googleMap.setOnInfoWindowLongClickListener {
             val request = ServiceBuilder.buildService(EndPoints::class.java)
@@ -156,6 +195,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                         val data = response.body()
 
                         if (data?.users_id == sharedPreferences.getInt("id", 0)) {
+
                             val alertDialogBuilder = AlertDialog.Builder(this@Maps).setTitle(getString(R.string.do_you_want_to_modify_marker))
                             alertDialogBuilder.setNeutralButton(R.string.edit) { dialog, which ->
                                 editarMarker(data.id, data.title, data.description, "", data.carTrafficProblem)
@@ -188,24 +228,37 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         var position: LatLng
 
         call.enqueue(object : Callback<List<MapIncidences>> {
+            @SuppressLint("MissingPermission")
             override fun onResponse(call: Call<List<MapIncidences>>, response: Response<List<MapIncidences>>) {
                 mMap.clear()
                 mapIncidences = response.body()!!
 
-                //teste
+                val actualLocation = LatLng(42.0269, -8.6422)
+
+//                val actualLocation = LatLng(lastLocation.latitude, lastLocation.longitude)
+                var distancia: Double
+
+                mMap.addMarker(MarkerOptions().position(actualLocation).title("map.title").snippet("map.description")
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA)))
+
                 for (map in mapIncidences) {
                     position = LatLng(map.latCoordinates, map.longCoordinates)
-                    //verifica que tipo de vista tem driving ou nao
 
-                    if (map.carTrafficProblem == driving) {
-                        // verifica se são pins do utilizador logado
-                        if (id == map.users_id) {
-                            marker = mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
-                        } else {
-                            marker = mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description))
+                    distancia = SphericalUtil.computeDistanceBetween(position, actualLocation)
+
+                    //DISTANCIA
+                    if (distancia < 3500) {
+                        //VISTA DRIVING
+                        if (map.carTrafficProblem == driving) {
+                            // verifica se são pins do utilizador logado
+                            if (id == map.users_id) {
+                                marker = mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
+                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
+                            } else {
+                                marker = mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description))
+                            }
+                            markerIdMapping.put(marker, map.id)
                         }
-                        markerIdMapping.put(marker, map.id)
                     }
                 }
             }
@@ -219,8 +272,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     /**
      * adiciona mark no servidor
      */
-    fun addPointWS(user_id: Int, latCoordinates: Double, longCoordinates: Double, title: String,
-            description: String, image: String, carTrafficProblem: Int) {
+    fun addPointWS(user_id: Int, latCoordinates: Double, longCoordinates: Double, title: String, description: String, image: String, carTrafficProblem: Int) {
         val request = ServiceBuilder.buildService(EndPoints::class.java)
         val call = request.addPoint(user_id, latCoordinates, longCoordinates, title, description, image, carTrafficProblem, 0)
 
@@ -258,7 +310,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     fun deletePointWS(id: Int) {
         val request = ServiceBuilder.buildService(EndPoints::class.java)
         val call = request.deletePoint(id)
-
         call.enqueue(object : Callback<MapIncidences> {
             override fun onResponse(call: Call<MapIncidences>, response: Response<MapIncidences>) {
                 Toast.makeText(this@Maps, getString(R.string.mark_was_deleted), Toast.LENGTH_SHORT).show()
@@ -299,7 +350,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             val user_id = sharedPreferences.getInt("id", 0)
 
             if (requestCode == createMarker) {
-
                 addPointWS(user_id, lastLocation.latitude, lastLocation.longitude, title.toString(), description.toString(),
                         "", carTrafficProblem!!)
             } else if (requestCode == editMarker) {
@@ -352,17 +402,16 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                     userDriving = 1
                 }
                 getPointsWS(userDriving)
-                Toast.makeText(this, "entra", Toast.LENGTH_SHORT).show()
                 true
             }
             else -> super.onOptionsItemSelected(item)
         }
     }
 
-
     override fun onPause() {
         super.onPause()
         fusedLocationProviderClient.removeLocationUpdates(locationCallback)
+        callPoints = false
     }
 
     override fun onResume() {
@@ -370,6 +419,10 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         startLocationUpdates()
     }
 
+
+    /**
+     * picasso
+     */
 
     /**
      * Janelinha no mapa
