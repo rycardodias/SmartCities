@@ -2,15 +2,29 @@ package ipvc.estg.smartcities
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.squareup.picasso.Picasso
+import ipvc.estg.smartcities.api.EndPoints
+import ipvc.estg.smartcities.api.ServiceBuilder
+import okhttp3.MediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.ResponseBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.io.File
 import java.util.*
+import kotlin.math.log
 
 
 class AddMarker : AppCompatActivity() {
@@ -19,6 +33,10 @@ class AddMarker : AppCompatActivity() {
     private lateinit var button: Button
     private lateinit var image: ImageView
     private lateinit var carTrafficProblem: CheckBox
+
+    //variaveis imagem
+    private val pickImage = 100
+    private var imageUri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,7 +64,8 @@ class AddMarker : AppCompatActivity() {
         })
 
         image.setOnClickListener {
-
+            val gallery = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+            startActivityForResult(gallery, pickImage)
         }
 
         button = findViewById(R.id.button_save)
@@ -67,9 +86,11 @@ class AddMarker : AppCompatActivity() {
                     trafficProblem == intent.getIntExtra("CARTRAFFICPROBLEM", 0)) {
                     setResult(Activity.RESULT_CANCELED, replyIntent)
                 } else {
+//                    uploadFile(imageUri!!)
+
                     replyIntent.putExtra(TITLE, title)
                     replyIntent.putExtra(DESCRIPTION, description)
-                    replyIntent.putExtra(IMAGE,  imageURL)
+                    replyIntent.putExtra(IMAGE, imageURL)
                     replyIntent.putExtra(CARTRAFFICPROBLEM, trafficProblem)
                     setResult(Activity.RESULT_OK, replyIntent)
                 }
@@ -84,9 +105,9 @@ class AddMarker : AppCompatActivity() {
         description.setText(intent.getStringExtra("DESCRIPTION"))
 
         if (intent.getIntExtra("CARTRAFFICPROBLEM", 0) == 0) {
-            carTrafficProblem.setChecked(false);
+            carTrafficProblem.isChecked = false
         } else {
-            carTrafficProblem.setChecked(true);
+            carTrafficProblem.isChecked = true
         }
 
         //adiciona imagem
@@ -99,6 +120,42 @@ class AddMarker : AppCompatActivity() {
             button.text = getString(R.string.edit_marker)
         }
 
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode == RESULT_OK && requestCode == pickImage) {
+            imageUri = data?.data
+            Picasso.get().load(imageUri).resize(800, 600).into(image)
+            Log.d("###IMAGEM", imageUri.toString())
+            uploadFile(imageUri!!)
+        }
+    }
+
+    private fun uploadFile(fileUri: Uri) {
+        val request = ServiceBuilder.buildService(EndPoints::class.java)
+        val file = File(fileUri.toString())
+        // create RequestBody instance from file
+        val requestFile: RequestBody = RequestBody.create(MediaType.parse(contentResolver.getType(fileUri)), Uri.decode(file.path))
+        // MultipartBody.Part is used to send also the actual file name
+        val body = MultipartBody.Part.createFormData("picture", file.name, requestFile)
+
+        // add another part within the multipart request
+        val descriptionString = "hello, this is description speaking"
+        val description = RequestBody.create(
+                MultipartBody.FORM, descriptionString)
+
+        val call: Call<ResponseBody> = request.upload(description, body)
+        call.enqueue(object : Callback<ResponseBody?> {
+            override fun onResponse(call: Call<ResponseBody?>,
+                    response: Response<ResponseBody?>) {
+                Log.v("Upload", "success")
+            }
+
+            override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
+                Log.e("Upload error:", t.message!!)
+            }
+        })
     }
 
     companion object {
