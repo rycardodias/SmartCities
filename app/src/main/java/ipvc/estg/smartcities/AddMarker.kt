@@ -2,27 +2,22 @@ package ipvc.estg.smartcities
 
 import android.app.Activity
 import android.content.Intent
-import android.os.Build.ID
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
-import android.util.Log
 import android.view.View
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.EditText
-import android.widget.Toast
-import androidx.core.view.isVisible
-import androidx.core.widget.addTextChangedListener
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import com.squareup.picasso.Picasso
 import java.util.*
+
 
 class AddMarker : AppCompatActivity() {
     private lateinit var title: EditText
     private lateinit var description: EditText
     private lateinit var button: Button
-    private lateinit var image: EditText
+    private lateinit var image: ImageView
     private lateinit var carTrafficProblem: CheckBox
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,10 +26,12 @@ class AddMarker : AppCompatActivity() {
 
         title = findViewById(R.id.et_title)
         description = findViewById(R.id.et_description)
-//        image =
+        image = findViewById(R.id.iv_imagem)
         carTrafficProblem = findViewById(R.id.cb_trafficProblem)
         title.addTextChangedListener(textWatcher)
         description.addTextChangedListener(textWatcher)
+
+        var imageURL = ""
 
         var trafficProblem: Int = 0
         carTrafficProblem.setOnClickListener(View.OnClickListener {
@@ -48,6 +45,10 @@ class AddMarker : AppCompatActivity() {
             }
         })
 
+        image.setOnClickListener {
+
+        }
+
         button = findViewById(R.id.button_save)
         button.setOnClickListener {
             val replyIntent = Intent()
@@ -56,21 +57,22 @@ class AddMarker : AppCompatActivity() {
             } else {
                 val title = title.text.toString()
                 val description = description.text.toString()
-                replyIntent.putExtra(ID,  intent.getIntExtra("ID", 0))
+
+                replyIntent.putExtra(ID, intent.getIntExtra("ID", 0))
 
                 // verifica se os campos foram alterados
                 if (title== intent.getStringExtra("TITLE") &&
                     description == intent.getStringExtra("DESCRIPTION") &&
+                    imageURL == intent.getStringExtra("IMAGE") &&
                     trafficProblem == intent.getIntExtra("CARTRAFFICPROBLEM", 0)) {
                     setResult(Activity.RESULT_CANCELED, replyIntent)
                 } else {
-                    replyIntent.putExtra(TITLE,  title)
+                    replyIntent.putExtra(TITLE, title)
                     replyIntent.putExtra(DESCRIPTION, description)
-//                  replyIntent.putExtra(IMAGE,  image)
+                    replyIntent.putExtra(IMAGE,  imageURL)
                     replyIntent.putExtra(CARTRAFFICPROBLEM, trafficProblem)
                     setResult(Activity.RESULT_OK, replyIntent)
                 }
-
             }
             finish()
         }
@@ -87,8 +89,12 @@ class AddMarker : AppCompatActivity() {
             carTrafficProblem.setChecked(true);
         }
 
-        Toast.makeText(this, intent.getIntExtra("CARTRAFFICPROBLEM", 0).toString()+ 'a', Toast.LENGTH_SHORT).show()
-//        trafficProblem= )
+        //adiciona imagem
+        imageURL = intent.getStringExtra("IMAGE").toString()
+        if (imageURL!= "") {
+            Picasso.get().load(imageURL).into(image)
+        }
+
         if (intent.getIntExtra("ID", 0) != 0) {
             button.text = getString(R.string.edit_marker)
         }

@@ -53,6 +53,9 @@ dependencies {
 
     implementation 'com.google.maps.android:android-maps-utils:2.1.0'
 
+    //PICASSO
+    implementation 'com.squareup.picasso:picasso:2.71828'
+
 
     implementation "androidx.appcompat:appcompat:$rootProject.appCompatVersion"
     implementation "androidx.activity:activity-ktx:$rootProject.activityVersion"

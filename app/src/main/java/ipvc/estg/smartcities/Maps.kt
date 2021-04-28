@@ -8,14 +8,18 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.location.Location
-import android.location.LocationManager
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.view.View
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -37,6 +41,7 @@ import ipvc.estg.smartcities.api.ServiceBuilder
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.sql.Blob
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -75,14 +80,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
 
         sharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
 
-//        /**
-//         * localização martelada
-//         */
-//        var targetlocation = Location(LocationManager.GPS_PROVIDER)
-//        targetlocation.latitude = 0.0
-//        targetlocation.longitude = 0.0
-//        lastLocation = targetlocation
-
         //iniciar biblioteca localizacao
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 
@@ -105,18 +102,8 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             }
         }
 
-//        locationCallback = object : LocationCallback() {
-//            override fun onLocationResult(p0: LocationResult) {
-//                super.onLocationResult(p0)
-//                lastLocation = p0.lastLocation
-//                val loc = LatLng(lastLocation.latitude, lastLocation.longitude)
-//                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 12.0f))
-//            }
-//        }
-
         //pede a localização
         createLocationRequest()
-
 
         //fab
         val fab = findViewById<FloatingActionButton>(R.id.fab)
@@ -183,6 +170,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         Log.d("###LOG", "ONMAP")
         mMap = googleMap
         getLastLocation()
+//        mMap.setInfoWindowAdapter(CustomInfoWindowForGoogleMap(this))
 //        getPointsWS(userDriving)
 
         googleMap.setOnInfoWindowLongClickListener {
@@ -198,7 +186,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
 
                             val alertDialogBuilder = AlertDialog.Builder(this@Maps).setTitle(getString(R.string.do_you_want_to_modify_marker))
                             alertDialogBuilder.setNeutralButton(R.string.edit) { dialog, which ->
-                                editarMarker(data.id, data.title, data.description, "", data.carTrafficProblem)
+                                editarMarker(data.id, data.title, data.description, data.image, data.carTrafficProblem)
                             }
                             alertDialogBuilder.setNegativeButton("Delete") { dialog, which ->
                                 deletePointWS(data.id)
@@ -232,6 +220,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             override fun onResponse(call: Call<List<MapIncidences>>, response: Response<List<MapIncidences>>) {
                 mMap.clear()
                 mapIncidences = response.body()!!
+
 
                 val actualLocation = LatLng(42.0269, -8.6422)
 
@@ -330,7 +319,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         intent.putExtra("ID", id)
         intent.putExtra("TITLE", title)
         intent.putExtra("DESCRIPTION", description)
-//      intent.putExtra("IMAGE", data.image)
+        intent.putExtra("IMAGE", image)
         intent.putExtra("CARTRAFFICPROBLEM", carTrafficProblem)
         startActivityForResult(intent, editMarker)
     }
@@ -344,16 +333,16 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             val id = data?.getIntExtra(AddMarker.ID, 0)
             val title = data?.getStringExtra(AddMarker.TITLE)
             val description = data?.getStringExtra(AddMarker.DESCRIPTION)
-//            val image = data?.getIntExtra(AddMarker.IMAGE, 0)
+            val image = data?.getStringExtra(AddMarker.IMAGE)
             val carTrafficProblem = data?.getIntExtra(AddMarker.CARTRAFFICPROBLEM, 0)
 
             val user_id = sharedPreferences.getInt("id", 0)
 
             if (requestCode == createMarker) {
                 addPointWS(user_id, lastLocation.latitude, lastLocation.longitude, title.toString(), description.toString(),
-                        "", carTrafficProblem!!)
+                        image.toString(), carTrafficProblem!!)
             } else if (requestCode == editMarker) {
-                updatePointWS(id!!, title.toString(), description.toString(), "", carTrafficProblem!!)
+                updatePointWS(id!!, title.toString(), description.toString(), image.toString(), carTrafficProblem!!)
             }
 
         } else {
@@ -435,11 +424,11 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
 //
 //            val tvTitle = view.findViewById<TextView>(R.id.cm_title)
 //            val tvDescription = view.findViewById<TextView>(R.id.cm_description)
-//            val bt_delete = view.findViewById<ImageButton>(R.id.cm_delete)
 //            val im_foto = view.findViewById<ImageView>(R.id.im_foto)
 //
 //            tvTitle.text = marker.title.toString()
 //            tvDescription.text = marker.snippet
+////            im_foto.setImageURI(marker.image)
 //
 //        }
 //
