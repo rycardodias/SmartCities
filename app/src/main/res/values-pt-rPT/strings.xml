@@ -12,4 +12,21 @@
     <string name="description">Descrição</string>
     <string name="field_is_empty">Campo está vazio</string>
     <string name="title">Titulo</string>
+    <string name="email_password_incorrect">O email ou password está incorreto</string>
+    <string name="title_activity_maps">Mapa</string>
+    <string name="Logout">Sair</string>
+    <string name="Map">Mapa</string>
+    <string name="gps_not_granted">Permissão GPS em falta</string>
+    <string name="new_incidence">Nova incidência adicionada</string>
+    <string name="something_went_wrong">Algo falhou!</string>
+    <string name="mark_was_deleted">Marcador removido</string>
+    <string name="add_marker">Adicionar marcador</string>
+    <string name="traffic_problem">Problema na estrada</string>
+    <string name="add">Adicionar</string>
+    <string name="do_you_want_to_modify_marker">Deseja modificar o marcador</string>
+    <string name="edit_marker">Editar marcador</string>
+    <string name="mark_was_updated">Marcador foi atualizado</string>
+    <string name="solved">Resolvido</string>
+    <string name="any_field_was_changed">Nenhum campo foi modificado</string>
+    <string name="driving">A conduzir</string>
 </resources>

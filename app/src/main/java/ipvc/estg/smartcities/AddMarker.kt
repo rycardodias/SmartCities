@@ -80,7 +80,7 @@ class AddMarker : AppCompatActivity() {
                 replyIntent.putExtra(ID, intent.getIntExtra("ID", 0))
 
                 // verifica se os campos foram alterados
-                if (title== intent.getStringExtra("TITLE") &&
+                if (title == intent.getStringExtra("TITLE") &&
                     description == intent.getStringExtra("DESCRIPTION") &&
                     imageURL == intent.getStringExtra("IMAGE") &&
                     trafficProblem == intent.getIntExtra("CARTRAFFICPROBLEM", 0)) {
@@ -112,7 +112,7 @@ class AddMarker : AppCompatActivity() {
 
         //adiciona imagem
         imageURL = intent.getStringExtra("IMAGE").toString()
-        if (imageURL!= "") {
+        if (imageURL != "") {
             Picasso.get().load(imageURL).into(image)
         }
 
@@ -129,6 +129,7 @@ class AddMarker : AppCompatActivity() {
             Picasso.get().load(imageUri).resize(800, 600).into(image)
             Log.d("###IMAGEM", imageUri.toString())
             uploadFile(imageUri!!)
+
         }
     }
 
@@ -141,15 +142,15 @@ class AddMarker : AppCompatActivity() {
         val body = MultipartBody.Part.createFormData("picture", file.name, requestFile)
 
         // add another part within the multipart request
-        val descriptionString = "hello, this is description speaking"
-        val description = RequestBody.create(
-                MultipartBody.FORM, descriptionString)
+        val descriptionString = "TEST"
+        val description = RequestBody.create(MultipartBody.FORM, descriptionString)
 
         val call: Call<ResponseBody> = request.upload(description, body)
         call.enqueue(object : Callback<ResponseBody?> {
             override fun onResponse(call: Call<ResponseBody?>,
                     response: Response<ResponseBody?>) {
-                Log.v("Upload", "success")
+                val resposta = response.body()
+                Log.v("Upload", "success" + resposta.toString())
             }
 
             override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
@@ -167,11 +168,11 @@ class AddMarker : AppCompatActivity() {
     }
 
     private val textWatcher = object : TextWatcher {
-        override fun afterTextChanged(s: Editable?) { }
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
+        override fun afterTextChanged(s: Editable?) {}
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            button.isEnabled = !(title.text.toString()=="" || description.text.toString()=="")
+            button.isEnabled = !(title.text.toString() == "" || description.text.toString() == "")
         }
     }
 }
