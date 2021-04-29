@@ -29,4 +29,5 @@
     <string name="solved">solved</string>
     <string name="any_field_was_changed">Any field was changed</string>
     <string name="driving">Driving</string>
+    <string name="add_image">Add Image</string>
 </resources>

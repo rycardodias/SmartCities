@@ -28,6 +28,7 @@ class AddNotes : AppCompatActivity() {
         title.addTextChangedListener(textWatcher)
         description.addTextChangedListener(textWatcher)
 
+
         button = findViewById<Button>(R.id.button_save)
         button.setOnClickListener {
             val replyIntent = Intent()

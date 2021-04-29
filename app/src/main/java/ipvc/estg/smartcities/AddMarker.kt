@@ -24,7 +24,6 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.io.File
 import java.util.*
-import kotlin.math.log
 
 
 class AddMarker : AppCompatActivity() {
@@ -48,8 +47,9 @@ class AddMarker : AppCompatActivity() {
         carTrafficProblem = findViewById(R.id.cb_trafficProblem)
         title.addTextChangedListener(textWatcher)
         description.addTextChangedListener(textWatcher)
-
         var imageURL = ""
+
+        image.setImageResource(R.drawable.ic_launcher_background)
 
         var trafficProblem: Int = 0
         carTrafficProblem.setOnClickListener(View.OnClickListener {
@@ -87,7 +87,6 @@ class AddMarker : AppCompatActivity() {
                     setResult(Activity.RESULT_CANCELED, replyIntent)
                 } else {
 //                    uploadFile(imageUri!!)
-
                     replyIntent.putExtra(TITLE, title)
                     replyIntent.putExtra(DESCRIPTION, description)
                     replyIntent.putExtra(IMAGE, imageURL)
@@ -109,12 +108,14 @@ class AddMarker : AppCompatActivity() {
         } else {
             carTrafficProblem.isChecked = true
         }
-
         //adiciona imagem
         imageURL = intent.getStringExtra("IMAGE").toString()
-        if (imageURL != "") {
-            Picasso.get().load(imageURL).into(image)
-        }
+
+            Picasso.get().load(imageURL)
+                .placeholder(R.drawable.ic_baseline_history_toggle_off_200)
+                .error(R.drawable.ic_baseline_search_200)
+                .resize(800, 600)
+                .into(image)
 
         if (intent.getIntExtra("ID", 0) != 0) {
             button.text = getString(R.string.edit_marker)
