@@ -151,9 +151,7 @@ class AddMarker : AppCompatActivity() {
         call.enqueue(object : Callback<ResponseBody?> {
             override fun onResponse(call: Call<ResponseBody?>,
                     response: Response<ResponseBody?>) {
-//                val resposta = Gson().toJson(response.toString())
-//                val resposta = response.body()
-//                val resposta1 = resposta?.contentType().toString()
+                val request = call
 
                 val source = response.body()!!.source().buffer().clone().readString(Charset.forName("UTF-8")).toString()
 //                source.request(Long.MAX_VALUE) // Buffer the entire body.
