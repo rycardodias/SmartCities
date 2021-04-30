@@ -505,7 +505,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
             makeToast(2)
         }
 
-        findViewById<TextView>(R.id.sensor_value).text = "x: $x y: $y z: $z" //accelationSquareRoot.toString()
     }
 }
 
