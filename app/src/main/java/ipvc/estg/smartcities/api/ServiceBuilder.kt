@@ -4,7 +4,9 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-var IP_ADRESS: String = "http://172.16.177.194/myslim/api/"
+//var IP_ADRESS: String = "http://172.16.177.194/myslim/api/"
+var IP_ADRESS: String = "http://192.168.1.73/myslim/api/"
+
 
 object ServiceBuilder {
     private val client = OkHttpClient.Builder().build()

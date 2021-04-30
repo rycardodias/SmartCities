@@ -69,12 +69,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
     //SENSORES
     private lateinit var mSensorManager: SensorManager
     private var mAccelerometer: Sensor? = null
-
-    //    private var magneticField: Sensor? = null
     private var mLight: Sensor? = null
-    private var magneticX: Float = 0.0F
-    private var magneticY: Float = 0.0F
-    private var magneticZ: Float = 0.0F
 
     private lateinit var sharedPreferences: SharedPreferences
 
@@ -88,7 +83,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
         //sensor
         mSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-//        magneticField = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
         mLight = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
 
 
@@ -101,15 +95,14 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
                 for (location in locationResult.locations) {
-                    //necessário para nao crashar se lastLocation==null
+                    lastLocation = location
+                    updateCameraBearing(mMap, location.bearing)
+
                     if (!callPoints) {
                         getPointsWS(userDriving)
                         callPoints = true
-
+                        getLastLocation()
                     }
-
-                    lastLocation = location
-                    updateCameraBearing(mMap, location.bearing)
 //                    val loc = LatLng(lastLocation.latitude, lastLocation.longitude)
 //                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 12.0f))
 
@@ -195,12 +188,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
-        Log.d("###LOG", "ONMAP")
         mMap = googleMap
-        getLastLocation()
-//        updateCameraBearing(mMap,lastLocation.bearing)
-//        mMap.setInfoWindowAdapter(CustomInfoWindowForGoogleMap(this))
-//        getPointsWS(userDriving)
 
         googleMap.setOnInfoWindowLongClickListener {
             val request = ServiceBuilder.buildService(EndPoints::class.java)
@@ -217,7 +205,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                             alertDialogBuilder.setNeutralButton(R.string.edit) { dialog, which ->
                                 editarMarker(data.id, data.title, data.description, data.image, data.carTrafficProblem)
                             }
-                            alertDialogBuilder.setNegativeButton("Delete") { dialog, which ->
+                            alertDialogBuilder.setNegativeButton(R.string.delete) { dialog, which ->
                                 deletePointWS(data.id)
                             }
                             alertDialogBuilder.show()
@@ -471,14 +459,14 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
 
     private fun makeToast(tipo: Int) {
         if (emQueda == 0 && tipo == 1) {
-            Toast.makeText(this, "Está em queda livre", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.is_free_falling), Toast.LENGTH_LONG).show()
             emQueda = 1
         } else if (emMoviementoRapido == 0 && tipo == 2) {
-            Toast.makeText(this, "Movimento violento", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.violent_movement), Toast.LENGTH_LONG).show()
             emMoviementoRapido = 1
             emQueda = 1
         } else if (estaEscuro == 0 && tipo == 3) {
-            Toast.makeText(this, "Está escuro", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.is_dark), Toast.LENGTH_LONG).show()
             estaEscuro = 1
         }
         Timer().schedule(object : TimerTask() {

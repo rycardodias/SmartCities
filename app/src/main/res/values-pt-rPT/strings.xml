@@ -29,4 +29,8 @@
     <string name="solved">Resolvido</string>
     <string name="any_field_was_changed">Nenhum campo foi modificado</string>
     <string name="driving">A conduzir</string>
+    <string name="add_image">Adicionar Imagem</string>
+    <string name="is_free_falling">Está em queda livre</string>
+    <string name="violent_movement">Movimento Violento</string>
+    <string name="is_dark">Está escuro</string>
 </resources>

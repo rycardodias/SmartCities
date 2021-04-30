@@ -111,7 +111,7 @@ class AddMarker : AppCompatActivity() {
         }
         //adiciona imagem
         imageURL = intent.getStringExtra("IMAGE").toString()
-        Log.d("###IMAGEM", imageURL)
+
         Picasso.get().load(IP_ADRESS + "imageUpload/" + imageURL)
             .placeholder(R.drawable.ic_baseline_history_toggle_off_200)
             .error(R.drawable.ic_baseline_search_200)
@@ -157,12 +157,11 @@ class AddMarker : AppCompatActivity() {
 //                source.request(Long.MAX_VALUE) // Buffer the entire body.
                 imageLink = source.substring(1, source.length -1)
 
-                Log.v("Upload", imageLink)
 
             }
 
             override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                Log.e("Upload error:", t.message!!)
+                Toast.makeText(this@AddMarker, "${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
     }

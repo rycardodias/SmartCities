@@ -30,4 +30,7 @@
     <string name="any_field_was_changed">Any field was changed</string>
     <string name="driving">Driving</string>
     <string name="add_image">Add Image</string>
+    <string name="is_free_falling">Is free falling</string>
+    <string name="violent_movement">Violent movement</string>
+    <string name="is_dark">Is dark</string>
 </resources>
