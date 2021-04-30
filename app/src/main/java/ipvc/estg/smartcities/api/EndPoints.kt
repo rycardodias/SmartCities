@@ -54,7 +54,7 @@ interface EndPoints {
     @Multipart
     @POST("upload")
     fun upload(
-            @Part("description") description: RequestBody,
+            @Part("TEST") description: RequestBody,
             @Part file: MultipartBody.Part
     ): Call<ResponseBody>
 

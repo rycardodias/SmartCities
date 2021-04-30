@@ -8,17 +8,18 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.graphics.BitmapFactory
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.location.Location
 import android.os.Bundle
+import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
-import android.view.View
-import android.widget.ImageButton
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -29,10 +30,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.*
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.maps.android.SphericalUtil
 import ipvc.estg.smartcities.api.EndPoints
@@ -41,12 +39,11 @@ import ipvc.estg.smartcities.api.ServiceBuilder
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.sql.Blob
 import java.util.*
 import kotlin.collections.HashMap
 
 
-class Maps : AppCompatActivity(), OnMapReadyCallback {
+class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
     private lateinit var mapIncidences: List<MapIncidences>
 
     private lateinit var mMap: GoogleMap
@@ -69,6 +66,16 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
     var callPoints = false
 
 
+    //SENSORES
+    private lateinit var mSensorManager: SensorManager
+    private var mAccelerometer: Sensor? = null
+
+    //    private var magneticField: Sensor? = null
+    private var mLight: Sensor? = null
+    private var magneticX: Float = 0.0F
+    private var magneticY: Float = 0.0F
+    private var magneticZ: Float = 0.0F
+
     private lateinit var sharedPreferences: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,6 +84,13 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
+        //sensor
+        mSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+//        magneticField = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+        mLight = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
+
 
         sharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
 
@@ -87,17 +101,18 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
                 for (location in locationResult.locations) {
-                    Log.d("###LOG", "locationCallback")
-
                     //necessário para nao crashar se lastLocation==null
                     if (!callPoints) {
                         getPointsWS(userDriving)
                         callPoints = true
+
                     }
 
                     lastLocation = location
-                    val loc = LatLng(lastLocation.latitude, lastLocation.longitude)
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 12.0f))
+                    updateCameraBearing(mMap, location.bearing)
+//                    val loc = LatLng(lastLocation.latitude, lastLocation.longitude)
+//                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 12.0f))
+
                 }
             }
         }
@@ -113,9 +128,22 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    private fun updateCameraBearing(googleMap: GoogleMap?, bearing: Float) {
+        if (googleMap == null) return
+        val camPos = CameraPosition
+            .builder(
+                    googleMap.cameraPosition // current Camera
+            )
+            .bearing(bearing)
+            .zoom(12.0f)
+            .build()
+
+        googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
+    }
+
     private fun createLocationRequest() {
         locationRequest = LocationRequest()
-        locationRequest.interval = 10000
+        locationRequest.interval = 2000
         locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
     }
 
@@ -125,8 +153,8 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
             && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return
         }
-        Log.d("###LOG", "startLocationUpdates")
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+
     }
 
     // Adiciona a localização
@@ -140,9 +168,9 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                     lastLocation = location
                     val currentLatLng = LatLng(location.latitude, location.longitude)
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12.0f))
+
                 }
             }
-
         } else {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST)
             return
@@ -170,6 +198,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         Log.d("###LOG", "ONMAP")
         mMap = googleMap
         getLastLocation()
+//        updateCameraBearing(mMap,lastLocation.bearing)
 //        mMap.setInfoWindowAdapter(CustomInfoWindowForGoogleMap(this))
 //        getPointsWS(userDriving)
 
@@ -221,14 +250,8 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
                 mMap.clear()
                 mapIncidences = response.body()!!
 
-
-                val actualLocation = LatLng(42.0269, -8.6422)
-
-//                val actualLocation = LatLng(lastLocation.latitude, lastLocation.longitude)
+                val actualLocation = LatLng(lastLocation.latitude, lastLocation.longitude)
                 var distancia: Double
-
-                mMap.addMarker(MarkerOptions().position(actualLocation).title("map.title").snippet("map.description")
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA)))
 
                 for (map in mapIncidences) {
                     position = LatLng(map.latCoordinates, map.longCoordinates)
@@ -401,49 +424,91 @@ class Maps : AppCompatActivity(), OnMapReadyCallback {
         super.onPause()
         fusedLocationProviderClient.removeLocationUpdates(locationCallback)
         callPoints = false
+        mSensorManager.unregisterListener(this)
     }
 
     override fun onResume() {
         super.onResume()
         startLocationUpdates()
+        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+        mSensorManager.registerListener(this, mLight, SensorManager.SENSOR_DELAY_NORMAL)
+    }
+
+    /**
+     * sensores
+     */
+    var luz: Float = 0F
+    override fun onSensorChanged(event: SensorEvent) {
+        if (event != null) {
+            if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+                getAccelerometer(event)
+            } else if (event.sensor.type == Sensor.TYPE_LIGHT) {
+                //luz 90 evento 200
+                if (((luz - event.values[0]) > 100) || ((event.values[0] - luz) > 100)) {
+                    luz = event.values[0]
+                    if (event.values[0] < 300) {
+                        
+                        makeToast(3)
+//                        Toast.makeText(this, "está escuro", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+
+            }
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        return
     }
 
 
     /**
-     * picasso
+     * funcões para movimento
      */
 
-    /**
-     * Janelinha no mapa
-     */
-//    class CustomInfoWindowForGoogleMap(context: Context) : GoogleMap.InfoWindowAdapter {
-//        var mContext = context
-//        var mWindow = (context as Activity).layoutInflater.inflate(R.layout.custom_marker_window, null)
-//
-//        private fun rendowWindowText(marker: Marker, view: View) {
-//
-//            val tvTitle = view.findViewById<TextView>(R.id.cm_title)
-//            val tvDescription = view.findViewById<TextView>(R.id.cm_description)
-//            val im_foto = view.findViewById<ImageView>(R.id.im_foto)
-//
-//            tvTitle.text = marker.title.toString()
-//            tvDescription.text = marker.snippet
-////            im_foto.setImageURI(marker.image)
-//
-//        }
-//
-//        override fun getInfoContents(marker: Marker): View {
-//            rendowWindowText(marker, mWindow)
-//            return mWindow
-//        }
-//
-//        override fun getInfoWindow(marker: Marker): View? {
-//            rendowWindowText(marker, mWindow)
-//            return mWindow
-//        }
-//    }
+    var emQueda: Int = 0
+    var emMoviementoRapido: Int = 0
+    var estaEscuro: Int = 0
 
+    private fun makeToast(tipo: Int) {
+        if (emQueda == 0 && tipo == 1) {
+            Toast.makeText(this, "Está em queda livre", Toast.LENGTH_LONG).show()
+            emQueda = 1
+        } else if (emMoviementoRapido == 0 && tipo == 2) {
+            Toast.makeText(this, "Movimento violento", Toast.LENGTH_LONG).show()
+            emMoviementoRapido = 1
+            emQueda = 1
+        } else if (estaEscuro == 0 && tipo == 3) {
+            Toast.makeText(this, "Está escuro", Toast.LENGTH_LONG).show()
+            estaEscuro = 1
+        }
+        Timer().schedule(object : TimerTask() {
+            override fun run() {
+                emQueda = 0
+                emMoviementoRapido = 0
+                estaEscuro = 0
+            }
+        }, 5000)
 
+    }
+
+    private fun getAccelerometer(event: SensorEvent) {
+        val values = event.values
+        // Movement
+        val x = values[0]
+        val y = values[1]
+        val z = values[2]
+        val accelationSquareRoot = ((x * x + y * y + z * z))
+        /// (SensorManager.GRAVITY_EARTH * SensorManager.GRAVITY_EARTH))
+        if (accelationSquareRoot < 1 && emQueda == 0) {
+            makeToast(1)
+        } else if (accelationSquareRoot > 2000 && emMoviementoRapido == 0) {
+            makeToast(2)
+        }
+
+        findViewById<TextView>(R.id.sensor_value).text = "x: $x y: $y z: $z" //accelationSquareRoot.toString()
+    }
 }
 
 

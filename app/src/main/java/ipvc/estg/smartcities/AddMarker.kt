@@ -140,7 +140,7 @@ class AddMarker : AppCompatActivity() {
         // create RequestBody instance from file
         val requestFile: RequestBody = RequestBody.create(MediaType.parse(contentResolver.getType(fileUri)), Uri.decode(file.path))
         // MultipartBody.Part is used to send also the actual file name
-        val body = MultipartBody.Part.createFormData("picture", file.name, requestFile)
+        val body = MultipartBody.Part.createFormData("picture", file.getName(), requestFile)
 
         // add another part within the multipart request
         val descriptionString = "TEST"
@@ -151,7 +151,7 @@ class AddMarker : AppCompatActivity() {
             override fun onResponse(call: Call<ResponseBody?>,
                     response: Response<ResponseBody?>) {
                 val resposta = response.body()
-                Log.v("Upload", "success" + resposta.toString())
+                Log.v("Upload", "success: " + resposta.toString())
             }
 
             override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {

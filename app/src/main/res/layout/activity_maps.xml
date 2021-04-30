@@ -25,4 +25,12 @@
         android:layout_margin="16dp"
         android:src="@drawable/ic_baseline_add_24" />
 
+    <TextView
+        android:id="@+id/sensor_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Sensor"
+        tools:layout_editor_absoluteX="27dp"
+        tools:layout_editor_absoluteY="51dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
