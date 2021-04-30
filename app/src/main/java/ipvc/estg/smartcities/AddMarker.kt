@@ -14,19 +14,22 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.squareup.picasso.Picasso
 import ipvc.estg.smartcities.api.EndPoints
+import ipvc.estg.smartcities.api.IP_ADRESS
 import ipvc.estg.smartcities.api.ServiceBuilder
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
+import okio.Buffer
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.File
-import java.util.*
+import java.nio.charset.Charset
 
 
 class AddMarker : AppCompatActivity() {
+
     private lateinit var title: EditText
     private lateinit var description: EditText
     private lateinit var button: Button
@@ -36,6 +39,7 @@ class AddMarker : AppCompatActivity() {
     //variaveis imagem
     private val pickImage = 100
     private var imageUri: Uri? = null
+    private var imageLink: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,10 +60,8 @@ class AddMarker : AppCompatActivity() {
 
             if (carTrafficProblem.isChecked) {
                 trafficProblem = 1
-                Toast.makeText(this, trafficProblem.toString(), Toast.LENGTH_SHORT).show()
             } else {
                 trafficProblem = 0
-                Toast.makeText(this, trafficProblem.toString(), Toast.LENGTH_SHORT).show()
             }
         })
 
@@ -86,10 +88,9 @@ class AddMarker : AppCompatActivity() {
                     trafficProblem == intent.getIntExtra("CARTRAFFICPROBLEM", 0)) {
                     setResult(Activity.RESULT_CANCELED, replyIntent)
                 } else {
-//                    uploadFile(imageUri!!)
                     replyIntent.putExtra(TITLE, title)
                     replyIntent.putExtra(DESCRIPTION, description)
-                    replyIntent.putExtra(IMAGE, imageURL)
+                    replyIntent.putExtra(IMAGE, imageLink)
                     replyIntent.putExtra(CARTRAFFICPROBLEM, trafficProblem)
                     setResult(Activity.RESULT_OK, replyIntent)
                 }
@@ -110,12 +111,12 @@ class AddMarker : AppCompatActivity() {
         }
         //adiciona imagem
         imageURL = intent.getStringExtra("IMAGE").toString()
-
-            Picasso.get().load(imageURL)
-                .placeholder(R.drawable.ic_baseline_history_toggle_off_200)
-                .error(R.drawable.ic_baseline_search_200)
-                .resize(800, 600)
-                .into(image)
+        Log.d("###IMAGEM", imageURL)
+        Picasso.get().load(IP_ADRESS + "imageUpload/" + imageURL)
+            .placeholder(R.drawable.ic_baseline_history_toggle_off_200)
+            .error(R.drawable.ic_baseline_search_200)
+            .resize(800, 600)
+            .into(image)
 
         if (intent.getIntExtra("ID", 0) != 0) {
             button.text = getString(R.string.edit_marker)
@@ -127,8 +128,8 @@ class AddMarker : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == RESULT_OK && requestCode == pickImage) {
             imageUri = data?.data
+
             Picasso.get().load(imageUri).resize(800, 600).into(image)
-            Log.d("###IMAGEM", imageUri.toString())
             uploadFile(imageUri!!)
 
         }
@@ -150,8 +151,16 @@ class AddMarker : AppCompatActivity() {
         call.enqueue(object : Callback<ResponseBody?> {
             override fun onResponse(call: Call<ResponseBody?>,
                     response: Response<ResponseBody?>) {
-                val resposta = response.body()
-                Log.v("Upload", "success: " + resposta.toString())
+//                val resposta = Gson().toJson(response.toString())
+//                val resposta = response.body()
+//                val resposta1 = resposta?.contentType().toString()
+
+                val source = response.body()!!.source().buffer().clone().readString(Charset.forName("UTF-8")).toString()
+//                source.request(Long.MAX_VALUE) // Buffer the entire body.
+                imageLink = source.substring(1, source.length -1)
+
+                Log.v("Upload", imageLink)
+
             }
 
             override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {

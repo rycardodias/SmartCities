@@ -446,10 +446,8 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                 //luz 90 evento 200
                 if (((luz - event.values[0]) > 100) || ((event.values[0] - luz) > 100)) {
                     luz = event.values[0]
-                    if (event.values[0] < 300) {
-                        
+                    if (event.values[0] < 100) {
                         makeToast(3)
-//                        Toast.makeText(this, "está escuro", Toast.LENGTH_SHORT).show()
                     }
                 }
 
