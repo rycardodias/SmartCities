@@ -14,7 +14,6 @@ import ipvc.estg.smartcities.geofence.NotificationHelper
 class GeofenceBroadcastReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         // an Intent broadcast.
-//        Toast.makeText(context, "Geofence triggered...", Toast.LENGTH_SHORT).show();
         val notificationHelper = NotificationHelper(context)
         val geofencingEvent = GeofencingEvent.fromIntent(intent)
 

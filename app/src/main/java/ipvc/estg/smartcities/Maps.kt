@@ -272,7 +272,8 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                                 .setRequestId(id.toString())
                                 .setCircularRegion(map.latCoordinates, map.longCoordinates, RADIUS_CIRCLE)
                                 .setExpirationDuration(-1)
-                                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
+//                                .setLoiteringDelay(4)
+                                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT or Geofence.GEOFENCE_TRANSITION_DWELL)
                                 .build())
 
                             mMap.addCircle(createGeofenceCircle(position, RADIUS_CIRCLE))
@@ -287,7 +288,10 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                         }
                     }
                 }
-                addGeofence()
+                if (mGeofenceList.size > 0) {
+                    addGeofence()
+                }
+
             }
 
             override fun onFailure(call: Call<List<MapIncidences>>, t: Throwable) {
