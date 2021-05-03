@@ -4,27 +4,28 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
 import android.os.Bundle
-import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.example.geofencing.GeofenceBroadcastReceiver
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -49,8 +50,11 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
     private lateinit var mMap: GoogleMap
     private lateinit var lastLocation: Location
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    private var ZOOM_MAP: Float = 15.0f
 
     private val LOCATION_PERMISSION_REQUEST = 1
+    private val BACKGROUND_LOCATION_ACCESS_REQUEST_CODE = 10002
+    private val RADIUS_CIRCLE: Float = 150f
 
     //added to implement location periodic updates
     private lateinit var locationCallback: LocationCallback
@@ -65,11 +69,14 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
     var userDriving = 0
     var callPoints = false
 
-
     //SENSORES
     private lateinit var mSensorManager: SensorManager
     private var mAccelerometer: Sensor? = null
     private var mLight: Sensor? = null
+
+    //geofence
+    private lateinit var geofencingClient: GeofencingClient
+    private var mGeofenceList = ArrayList<Geofence>()
 
     private lateinit var sharedPreferences: SharedPreferences
 
@@ -85,6 +92,8 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         mLight = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
 
+        //geofence
+        geofencingClient = LocationServices.getGeofencingClient(this)
 
         sharedPreferences = getSharedPreferences(getString(R.string.LoginData), Context.MODE_PRIVATE)
 
@@ -105,11 +114,9 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                     }
 //                    val loc = LatLng(lastLocation.latitude, lastLocation.longitude)
 //                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 12.0f))
-
                 }
             }
         }
-
         //pede a localização
         createLocationRequest()
 
@@ -128,7 +135,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                     googleMap.cameraPosition // current Camera
             )
             .bearing(bearing)
-            .zoom(12.0f)
+            .zoom(ZOOM_MAP)
             .build()
 
         googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
@@ -136,7 +143,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
 
     private fun createLocationRequest() {
         locationRequest = LocationRequest()
-        locationRequest.interval = 2000
+        locationRequest.interval = 10000
         locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
     }
 
@@ -160,7 +167,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                 if (location != null) {
                     lastLocation = location
                     val currentLatLng = LatLng(location.latitude, location.longitude)
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12.0f))
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, ZOOM_MAP))
 
                 }
             }
@@ -169,6 +176,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
             return
         }
     }
+
 
     //controla ações perante a resposta ao pedido de permissões
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -181,14 +189,21 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                 }
                 mMap.isMyLocationEnabled = true
             }
-        } else {
-            Toast.makeText(this, getString(R.string.gps_not_granted), Toast.LENGTH_LONG).show()
         }
-
+        if (requestCode == BACKGROUND_LOCATION_ACCESS_REQUEST_CODE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                //We have the permission
+                Toast.makeText(this, getString(R.string.geofence_permissions_granted), Toast.LENGTH_SHORT).show();
+            } else {
+                //We do not have the permission..
+                Toast.makeText(this, getString(R.string.geofence_permissions_denied), Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
+        getLastLocation()
 
         googleMap.setOnInfoWindowLongClickListener {
             val request = ServiceBuilder.buildService(EndPoints::class.java)
@@ -241,6 +256,8 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                 val actualLocation = LatLng(lastLocation.latitude, lastLocation.longitude)
                 var distancia: Double
 
+                var criou: Int = 0
+
                 for (map in mapIncidences) {
                     position = LatLng(map.latCoordinates, map.longCoordinates)
 
@@ -251,6 +268,16 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                         //VISTA DRIVING
                         if (map.carTrafficProblem == driving) {
                             // verifica se são pins do utilizador logado
+
+                            mGeofenceList.add(Geofence.Builder()
+                                .setRequestId(id.toString())
+                                .setCircularRegion(map.latCoordinates, map.longCoordinates, RADIUS_CIRCLE)
+                                .setExpirationDuration(-1)
+                                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
+                                .build())
+
+                            createGeofenceCircle(position, RADIUS_CIRCLE)
+
                             if (id == map.users_id) {
                                 marker = mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
                                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
@@ -261,6 +288,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                         }
                     }
                 }
+                addGeofence()
             }
 
             override fun onFailure(call: Call<List<MapIncidences>>, t: Throwable) {
@@ -355,10 +383,10 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
             } else if (requestCode == editMarker) {
                 updatePointWS(id!!, title.toString(), description.toString(), image.toString(), carTrafficProblem!!)
             }
-
-        } else {
-            Toast.makeText(applicationContext, getString(R.string.any_field_was_changed), Toast.LENGTH_SHORT).show()
         }
+//        else {
+//            Toast.makeText(applicationContext, getString(R.string.any_field_was_changed), Toast.LENGTH_SHORT).show()
+//        }
     }
 
     /**
@@ -438,8 +466,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                         makeToast(3)
                     }
                 }
-
-
             }
         }
     }
@@ -476,7 +502,6 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                 estaEscuro = 0
             }
         }, 5000)
-
     }
 
     private fun getAccelerometer(event: SensorEvent) {
@@ -492,8 +517,72 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
         } else if (accelationSquareRoot > 2000 && emMoviementoRapido == 0) {
             makeToast(2)
         }
-
     }
+
+
+    /**
+     * GEOFENCE
+     */
+    private fun createGeofenceCircle(center: LatLng, radius: Float): CircleOptions? {
+        val circleOptions = CircleOptions()
+        circleOptions.center(center)
+        circleOptions.radius(radius.toDouble())
+        circleOptions.strokeColor(Color.BLUE)
+        circleOptions.fillColor(0x30ff0000)
+        circleOptions.strokeWidth(2f)
+        return circleOptions
+    }
+
+    private val geofencePendingIntent: PendingIntent by lazy {
+        val intent = Intent(this, GeofenceBroadcastReceiver::class.java)
+        // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when calling
+        // addGeofences() and removeGeofences().
+        Log.d(TAG, "Entra Aqui")
+        PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+    }
+
+    private fun getGeofencingRequest(): GeofencingRequest {
+        return GeofencingRequest.Builder().apply {
+            setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+            addGeofences(mGeofenceList)
+        }.build()
+    }
+
+    private fun addGeofence() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+
+        geofencingClient.addGeofences(getGeofencingRequest(), geofencePendingIntent)?.run {
+            addOnSuccessListener {
+                Toast.makeText(this@Maps, R.string.geofences_added, Toast.LENGTH_SHORT).show()
+                Log.d("###Add Geofence", "guardou")
+            }
+            addOnFailureListener {
+                Toast.makeText(this@Maps, R.string.geofences_not_added, Toast.LENGTH_SHORT).show()
+                Log.d("###Not Added Geofence", "falhou")
+            }
+        }
+    }
+
+//    private fun removeGeofence() {
+//        geofencingClient.removeGeofences(geofencePendingIntent)?.run {
+//            addOnSuccessListener {
+//                // Geofences removed
+//                // ...
+//                Toast.makeText(this@Maps, R.string.geofences_removed, Toast.LENGTH_SHORT).show()
+//                Log.e("Add Geofence", "removeu")
+//            }
+//            addOnFailureListener {
+//                // Failed to remove geofences
+//                // ...
+//                Toast.makeText(this@Maps, R.string.geofences_not_removed, Toast.LENGTH_SHORT).show()
+//                Log.e("Add Geofence", "n removeu")
+//            }
+//        }
+//    }
+
+    private val TAG = "#Maps"
 }
 
 

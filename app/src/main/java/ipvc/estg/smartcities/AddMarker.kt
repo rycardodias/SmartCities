@@ -149,15 +149,10 @@ class AddMarker : AppCompatActivity() {
 
         val call: Call<ResponseBody> = request.upload(description, body)
         call.enqueue(object : Callback<ResponseBody?> {
-            override fun onResponse(call: Call<ResponseBody?>,
-                    response: Response<ResponseBody?>) {
-                val request = call
-
+            override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
                 val source = response.body()!!.source().buffer().clone().readString(Charset.forName("UTF-8")).toString()
 //                source.request(Long.MAX_VALUE) // Buffer the entire body.
                 imageLink = source.substring(1, source.length -1)
-
-
             }
 
             override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {

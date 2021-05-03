@@ -33,4 +33,16 @@
     <string name="is_free_falling">Is free falling</string>
     <string name="violent_movement">Violent movement</string>
     <string name="is_dark">Is dark</string>
+    <string name="geofences_not_added">Geofences not added</string>
+    <string name="geofences_added">Geofences added</string>
+    <string name="geofence_not_available">Geofence not available</string>
+    <string name="geofence_too_many_geofences">Too many geofences</string>
+    <string name="geofence_too_many_pending_intents">To many pending intents</string>
+    <string name="unknown_geofence_error">unkwown geofence error</string>
+    <string name="geofences_removed">geofences removed</string>
+    <string name="geofences_not_removed">geofences not removed</string>
+    <string name="geofence_transition_invalid_type">geofence transition invalid type</string>
+    <string name="geofence_unknown_error">geofence unknown error</string>
+    <string name="geofence_permissions_granted">Geofence Permissions Granted</string>
+    <string name="geofence_permissions_denied">Geofence Permissions Denied</string>
 </resources>
