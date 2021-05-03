@@ -188,12 +188,12 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
             }
         }
         if (requestCode == BACKGROUND_LOCATION_ACCESS_REQUEST_CODE) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.contains(PackageManager.PERMISSION_GRANTED)) {
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    return
+                }
                 //We have the permission
                 Toast.makeText(this, getString(R.string.geofence_permissions_granted), Toast.LENGTH_SHORT).show();
-            } else {
-                //We do not have the permission..
-                Toast.makeText(this, getString(R.string.geofence_permissions_denied), Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -267,17 +267,21 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                         //VISTA DRIVING
                         if (map.carTrafficProblem == driving) {
                             // verifica se são pins do utilizador logado
+                            if (ContextCompat.checkSelfPermission(this@Maps, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 
-                            mGeofenceList.add(Geofence.Builder()
-                                .setRequestId(id.toString())
-                                .setCircularRegion(map.latCoordinates, map.longCoordinates, RADIUS_CIRCLE)
-                                .setExpirationDuration(-1)
+
+                                mGeofenceList.add(Geofence.Builder()
+                                    .setRequestId(id.toString())
+                                    .setCircularRegion(map.latCoordinates, map.longCoordinates, RADIUS_CIRCLE)
+                                    .setExpirationDuration(10000000)
 //                                .setLoiteringDelay(4)
-                                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT or Geofence.GEOFENCE_TRANSITION_DWELL)
-                                .build())
+                                    .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
+                                    .build())
 
-                            mMap.addCircle(createGeofenceCircle(position, RADIUS_CIRCLE))
-
+                                mMap.addCircle(createGeofenceCircle(position, RADIUS_CIRCLE))
+                            } else {
+                                ActivityCompat.requestPermissions(this@Maps, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION), BACKGROUND_LOCATION_ACCESS_REQUEST_CODE)
+                            }
                             if (id == map.users_id) {
                                 marker = mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
                                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
@@ -291,6 +295,7 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                 if (mGeofenceList.size > 0) {
                     addGeofence()
                 }
+                Log.d(TAG, mGeofenceList.toString())
 
             }
 
@@ -557,14 +562,14 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                 Log.d(TAG, "addGeofences.addOnSuccessListener")
             }
             addOnFailureListener {
-                Toast.makeText(this@Maps, getString(R.string.geofences_not_added), Toast.LENGTH_SHORT).show()
+//                Toast.makeText(this@Maps, getString(R.string.geofences_not_added), Toast.LENGTH_SHORT).show()
                 Log.d(TAG, "addGeofences.addOnFailureListener")
             }
         }
     }
 
     private fun removeGeofence() {
-        geofencingClient.removeGeofences(geofencePendingIntent)?.run {
+        geofencingClient.removeGeofences(geofencePendingIntent).run {
             addOnSuccessListener {
                 // Geofences removed
                 Log.d(TAG, "removeGeofences.addOnSuccessListener")
