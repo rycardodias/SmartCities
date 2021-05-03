@@ -33,4 +33,18 @@
     <string name="is_free_falling">Está em queda livre</string>
     <string name="violent_movement">Movimento Violento</string>
     <string name="is_dark">Está escuro</string>
+    <string name="geofences_not_added">Geofence não adicionado</string>
+    <string name="geofences_added">Geofence adicionado</string>
+    <string name="geofence_not_available">Geofence indisponivel</string>
+    <string name="geofence_too_many_geofences">Demasiados geofences</string>
+    <string name="geofence_too_many_pending_intents">Demasiados pedidos pendentes</string>
+    <string name="unknown_geofence_error">Erro geofence desconhecido</string>
+    <string name="geofences_removed">Geofences removidos</string>
+    <string name="geofences_not_removed">Geofences não removidos</string>
+    <string name="geofence_transition_invalid_type">Tipo transação geofence inválida</string>
+    <string name="geofence_unknown_error">Erro geofence desconhecido</string>
+    <string name="geofence_permissions_granted">permissões de geofence atribuidas</string>
+    <string name="geofence_permissions_denied">permissões de geofence recusadas</string>
+    <string name="entered_danger_zone">Cuidado, entrou numa zona de perigo</string>
+    <string name="out_danger_zone">Está fora da zona de perigo</string>
 </resources>

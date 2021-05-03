@@ -45,4 +45,7 @@
     <string name="geofence_unknown_error">geofence unknown error</string>
     <string name="geofence_permissions_granted">Geofence Permissions Granted</string>
     <string name="geofence_permissions_denied">Geofence Permissions Denied</string>
+    <string name="entered_danger_zone">Be careful, you have entered a danger zone!</string>
+    <string name="out_danger_zone">You are out of danger zone</string>
+    <string name="danger_zone">Danger zone</string>
 </resources>
