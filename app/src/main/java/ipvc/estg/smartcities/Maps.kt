@@ -263,25 +263,20 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
                     distancia = SphericalUtil.computeDistanceBetween(position, actualLocation)
 
                     //DISTANCIA
-                    if (distancia < 3500) {
+                    if (distancia < 3500) { // DISTANCIA DOS PONTOS
                         //VISTA DRIVING
-                        if (map.carTrafficProblem == driving) {
-                            // verifica se são pins do utilizador logado
-                            if (ContextCompat.checkSelfPermission(this@Maps, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        if (map.carTrafficProblem == driving) { // verifica se são pins do utilizador logado
 
-
-                                mGeofenceList.add(Geofence.Builder()
-                                    .setRequestId(id.toString())
-                                    .setCircularRegion(map.latCoordinates, map.longCoordinates, RADIUS_CIRCLE)
-                                    .setExpirationDuration(10000000)
+                            mGeofenceList.add(Geofence.Builder()
+                                .setRequestId(id.toString())
+                                .setCircularRegion(map.latCoordinates, map.longCoordinates, RADIUS_CIRCLE)
+                                .setExpirationDuration(10000000)
 //                                .setLoiteringDelay(4)
-                                    .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
-                                    .build())
+                                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
+                                .build())
 
-                                mMap.addCircle(createGeofenceCircle(position, RADIUS_CIRCLE))
-                            } else {
-                                ActivityCompat.requestPermissions(this@Maps, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION), BACKGROUND_LOCATION_ACCESS_REQUEST_CODE)
-                            }
+                            mMap.addCircle(createGeofenceCircle(position, RADIUS_CIRCLE))
+
                             if (id == map.users_id) {
                                 marker = mMap.addMarker(MarkerOptions().position(position).title(map.title).snippet(map.description)
                                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
@@ -553,16 +548,21 @@ class Maps : AppCompatActivity(), OnMapReadyCallback, SensorEventListener {
     }
 
     private fun addGeofence() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "addGeofence.ACCESS_FINE_LOCATION NOT GRANTED")
-            return
+//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), BACKGROUND_LOCATION_ACCESS_REQUEST_CODE)
+//
+//        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION), BACKGROUND_LOCATION_ACCESS_REQUEST_CODE)
+            }
         }
-        geofencingClient.addGeofences(getGeofencingRequest(), geofencePendingIntent)?.run {
+
+        geofencingClient.addGeofences(getGeofencingRequest(), geofencePendingIntent).run {
             addOnSuccessListener {
                 Log.d(TAG, "addGeofences.addOnSuccessListener")
             }
             addOnFailureListener {
-//                Toast.makeText(this@Maps, getString(R.string.geofences_not_added), Toast.LENGTH_SHORT).show()
                 Log.d(TAG, "addGeofences.addOnFailureListener")
             }
         }
